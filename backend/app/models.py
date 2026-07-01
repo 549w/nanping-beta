@@ -116,3 +116,39 @@ class CourseOffering(Base):
     )
 
     course = relationship("Course", back_populates="offerings")
+
+
+class User(Base):
+    """用户。
+
+    以南京大学邮箱注册，登录后提交评价。
+    系统账号 system@nanping 用于挂载导入的历史评价。
+    """
+
+    __tablename__ = "user"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    email = Column(Text, nullable=False, unique=True, comment="南大邮箱")
+    password = Column(Text, nullable=False, comment="密码哈希")
+    created_at = Column(Text, nullable=False, comment="注册时间")
+
+
+class Review(Base):
+    """课程评价。
+
+    每条评价属于一个 Course 和一个 User。
+    导入的历史评价挂在 system@nanping 用户下。
+    """
+
+    __tablename__ = "review"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    course_id = Column(Integer, ForeignKey("course.id"), nullable=False, comment="所属课程")
+    user_id = Column(Integer, ForeignKey("user.id"), nullable=False, comment="提交用户")
+    rating = Column(Integer, nullable=True, comment="评分 1-5，导入数据可为空")
+    content = Column(Text, nullable=False, comment="评价正文")
+    semester = Column(Text, nullable=True, comment="学年学期，如 2024秋，导入数据可为空")
+    is_anonymous = Column(Integer, nullable=False, default=0, comment="展示时是否匿名")
+    is_deleted = Column(Integer, nullable=False, default=0, comment="软删除标记")
+    source = Column(Text, nullable=False, default="native", comment="来源：native 或导入文件名")
+    created_at = Column(Text, nullable=False, comment="提交时间")
