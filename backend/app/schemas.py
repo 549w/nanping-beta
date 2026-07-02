@@ -205,7 +205,7 @@ class MatchCourseItem(BaseModel):
 
     course: CourseItem
     top_reviews: list[ReviewItem] = []
-    match_level: str = Field(description="匹配级别：code（课程号匹配）/ teacher（教师匹配）")
+    match_level: str = Field(description="匹配字段组合，如 code+teacher+name / teacher / code 等")
 
 
 class MatchResult(BaseModel):

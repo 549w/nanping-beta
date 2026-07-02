@@ -43,6 +43,8 @@
     panel: null,
     /** 背景遮罩 DOM */
     overlay: null,
+    /** Shadow DOM 宿主元素 */
+    host: null,
     /** 面板是否展开 */
     isPanelOpen: false,
     /** 防抖计时器 ID */
@@ -226,7 +228,15 @@
       var best = matchResult.matched[0];
       var c = best.course;
       var ratingText = c.avg_rating != null ? "⭐ " + c.avg_rating.toFixed(1) : "";
+
+      // 解析 match_level 生成字段标签（仅用最严格策略命中的第一个 course）
+      var fieldTags = matchLevelToTags(best.match_level);
+      var tagsHtml = fieldTags.map(function (t) {
+        return '<span class="np-badge-tag np-tag-' + t.cls + '">匹配' + t.label + '</span>';
+      }).join("");
+
       badgeRow.innerHTML =
+        tagsHtml +
         '<span class="np-badge-rating">' + ratingText + '</span>' +
         '<span class="np-badge-count">' + c.review_count + "条评价</span>" +
         '<button class="np-badge-btn">查看</button>';
@@ -275,6 +285,7 @@
     host.style.cssText =
       "position:fixed;top:0;right:0;bottom:0;left:0;z-index:99999;pointer-events:none;";
     document.body.appendChild(host);
+    state.host = host;
 
     var shadow = host.attachShadow({ mode: "open" });
     state.shadowRoot = shadow;
@@ -305,8 +316,11 @@
     shadow.appendChild(panel);
     state.panel = panel;
 
-    // 关闭按钮
+    // 关闭按钮 + 面板点击阻止冒泡
     panel.querySelector(".np-close-btn").addEventListener("click", closeSidePanel);
+    panel.addEventListener("click", function (e) {
+      e.stopPropagation();
+    });
 
     // ESC 键关闭
     document.addEventListener("keydown", function (e) {
@@ -324,10 +338,9 @@
     return (
       /* ===== 重置 ===== */
       "* { box-sizing: border-box; margin: 0; padding: 0; }" +
-      ":host { all: initial; }" +
       /* ===== 遮罩 ===== */
       ".np-overlay {" +
-      "  position: fixed; top: 0; left: 0; right: 0; bottom: 0;" +
+      "  position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 1;" +
       "  background: rgba(0,0,0,0.35);" +
       "  opacity: 0; transition: opacity 0.3s ease;" +
       "  pointer-events: none;" +
@@ -335,7 +348,7 @@
       ".np-overlay.np-open { opacity: 1; pointer-events: auto; }" +
       /* ===== 面板 ===== */
       ".np-panel {" +
-      "  position: fixed; top: 0; right: 0; bottom: 0;" +
+      "  position: fixed; top: 0; right: 0; bottom: 0; z-index: 2;" +
       "  width: " + CONFIG.PANEL_WIDTH + "px; max-width: 100vw;" +
       "  background: #ffffff;" +
       "  box-shadow: -4px 0 20px rgba(0,0,0,0.12);" +
@@ -343,8 +356,9 @@
       "  display: flex; flex-direction: column;" +
       "  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;" +
       "  font-size: 14px; color: #1f2937; line-height: 1.5;" +
+      "  pointer-events: none;" +
       "}" +
-      ".np-panel.np-open { transform: translateX(0); }" +
+      ".np-panel.np-open { transform: translateX(0); pointer-events: auto; }" +
       /* ===== 面板头部 ===== */
       ".np-panel-header {" +
       "  display: flex; align-items: center; justify-content: space-between;" +
@@ -375,6 +389,10 @@
       "  border-radius: 10px; padding: 16px; margin-bottom: 16px;" +
       "}" +
       ".np-course-card:last-child { margin-bottom: 0; }" +
+      ".np-course-header-row {" +
+      "  display: flex; align-items: flex-start; justify-content: space-between;" +
+      "  gap: 8px;" +
+      "}" +
       ".np-course-code { font-size: 12px; color: #6b7280; font-weight: 500; }" +
       ".np-course-name { font-size: 16px; font-weight: 600; color: #111827; margin: 3px 0 2px; }" +
       ".np-course-teacher { font-size: 13px; color: #6b7280; }" +
@@ -386,8 +404,18 @@
       ".np-rating-none { font-size: 14px; color: #9ca3af; }" +
       ".np-review-count { font-size: 13px; color: #6b7280; }" +
       ".np-match-tag {" +
-      "  font-size: 11px; padding: 1px 6px; border-radius: 4px;" +
-      "  background: #dbeafe; color: #1d4ed8; margin-left: auto;" +
+      "  display: inline-block; font-size: 12px; font-weight: 600;" +
+      "  padding: 4px 10px; border-radius: 6px; white-space: nowrap;" +
+      "  flex-shrink: 0;" +
+      "}" +
+      ".np-match-tag.np-tag-code {" +
+      "  background: #dbeafe; color: #1d4ed8;" +
+      "}" +
+      ".np-match-tag.np-tag-teacher {" +
+      "  background: #fef3c7; color: #92400e;" +
+      "}" +
+      ".np-match-tag.np-tag-name {" +
+      "  background: #dcfce7; color: #15803d;" +
       "}" +
       /* ===== 评价列表 ===== */
       ".np-section-title {" +
@@ -431,6 +459,7 @@
     ensureSidePanel();
 
     // 动画显示
+    state.host.style.pointerEvents = "auto";
     state.overlay.classList.add("np-open");
     state.panel.classList.add("np-open");
     state.isPanelOpen = true;
@@ -448,6 +477,7 @@
     state.overlay.classList.remove("np-open");
     state.panel.classList.remove("np-open");
     state.isPanelOpen = false;
+    state.host.style.pointerEvents = "none";
     document.body.style.overflow = "";
   }
 
@@ -469,21 +499,28 @@
     matchResult.matched.forEach(function (item) {
       var c = item.course;
       var reviews = item.top_reviews || [];
-      var tagLabel = item.match_level === "code"
-        ? "课程号匹配"
-        : "教师匹配";
+
+      // 每个 course 独立解析其 match_level，生成字段标签
+      var fieldTags = matchLevelToTags(item.match_level);
+      var tagsHtml = fieldTags.map(function (t) {
+        return '<span class="np-match-tag np-tag-' + t.cls + '">匹配' + t.label + '</span>';
+      }).join("");
 
       html +=
         '<div class="np-course-card" data-course-id="' + c.id + '">' +
-        '  <div class="np-course-code">' + esc(c.code) + '</div>' +
-        '  <div class="np-course-name">' + esc(c.name) + '</div>' +
-        '  <div class="np-course-teacher">' + esc(c.teacher) + '</div>' +
+        '  <div class="np-course-header-row">' +
+        '    <div>' +
+        '      <div class="np-course-code">' + esc(c.code) + '</div>' +
+        '      <div class="np-course-name">' + esc(c.name) + '</div>' +
+        '      <div class="np-course-teacher">' + esc(c.teacher) + '</div>' +
+        "    </div>" +
+        '    <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">' + tagsHtml + '</div>' +
+        "  </div>" +
         '  <div class="np-course-stats">' +
         (c.avg_rating != null
           ? '<span class="np-rating">⭐ ' + c.avg_rating.toFixed(1) + '</span>'
           : '<span class="np-rating-none">暂无评分</span>') +
         '    <span class="np-review-count">' + c.review_count + ' 条评价</span>' +
-        '    <span class="np-match-tag">' + tagLabel + '</span>' +
         "  </div>" +
         '  <div class="np-section-title">最新评价</div>' +
         reviews.map(renderReviewHtml).join("") +
@@ -565,6 +602,29 @@
   // 工具函数
   // ============================================================
 
+  /**
+   * 将 match_level 字符串解析为字段标签数组。
+   *
+   * match_level 如 "code+teacher+name"，按 "+" 拆分后映射：
+   *   code    → {label:"课程号", cls:"code"}
+   *   teacher → {label:"教师",   cls:"teacher"}
+   *   name    → {label:"课程名", cls:"name"}
+   *
+   * @param {string} level
+   * @returns {Array<{label: string, cls: string}>}
+   */
+  function matchLevelToTags(level) {
+    var FIELD_MAP = {
+      code:    { label: "课程号", cls: "code" },
+      teacher: { label: "教师",   cls: "teacher" },
+      name:    { label: "课程名", cls: "name" },
+    };
+    if (!level) return [];
+    return level.split("+").map(function (f) {
+      return FIELD_MAP[f] || { label: f, cls: f };
+    }).filter(Boolean);
+  }
+
   /** HTML 转义 */
   function esc(str) {
     if (!str) return "";
@@ -596,6 +656,7 @@
     ".np-badge-row {" +
     "  display: flex !important; align-items: center !important; gap: 8px !important;" +
     "  margin-top: 6px !important; font-size: 13px !important; line-height: 1.4 !important;" +
+    "  flex-wrap: wrap !important;" +
     "}" +
     ".np-badge-rating {" +
     "  font-weight: 700 !important; color: #f59e0b !important; white-space: nowrap !important;" +
@@ -615,6 +676,71 @@
     "}" +
     ".np-badge-none {" +
     "  color: #9ca3af !important; font-size: 12px !important; white-space: nowrap !important;" +
+    "}" +
+    ".np-badge-tag {" +
+    "  display: inline-block !important; font-size: 11px !important; font-weight: 600 !important;" +
+    "  padding: 1px 7px !important; border-radius: 4px !important; white-space: nowrap !important;" +
+    "}" +
+    ".np-badge-tag.np-tag-code {" +
+    "  background: #dbeafe !important; color: #1d4ed8 !important;" +
+    "}" +
+    ".np-badge-tag.np-tag-teacher {" +
+    "  background: #fef3c7 !important; color: #92400e !important;" +
+    "}" +
+    ".np-badge-tag.np-tag-name {" +
+    "  background: #dcfce7 !important; color: #15803d !important;" +
+    "}" +
+    /* ===== 加载提示条 ===== */
+    ".np-loading-bar {" +
+    "  display: flex !important; align-items: center !important; gap: 10px !important;" +
+    "  padding: 10px 16px !important; margin: 8px 0 !important;" +
+    "  background: #eff6ff !important; border: 1px solid #bfdbfe !important;" +
+    "  border-radius: 8px !important; font-size: 14px !important; color: #1d4ed8 !important;" +
+    "}" +
+    ".np-loading-bar.np-success {" +
+    "  background: #f0fdf4 !important; border-color: #bbf7d0 !important; color: #15803d !important;" +
+    "}" +
+    ".np-loading-bar.np-error {" +
+    "  background: #fef2f2 !important; border-color: #fecaca !important; color: #b91c1c !important;" +
+    "}" +
+    ".np-loading-spinner {" +
+    "  display: inline-block !important; width: 16px !important; height: 16px !important;" +
+    "  border: 2px solid #bfdbfe !important; border-top-color: #2563eb !important;" +
+    "  border-radius: 50% !important; animation: np-spin 0.8s linear infinite !important;" +
+    "}" +
+    "@keyframes np-spin { to { transform: rotate(360deg); } }" +
+    /* ===== 灵动岛加载提示 ===== */
+    ".np-island {" +
+    "  position: fixed !important; top: 16px !important;" +
+    "  left: 50% !important; transform: translateX(-50%) !important;" +
+    "  z-index: 2147483647 !important;" +
+    "  background: rgba(31,41,55,0.92) !important; color: #fff !important;" +
+    "  border-radius: 28px !important; padding: 10px 24px !important;" +
+    "  display: flex !important; align-items: center !important; gap: 10px !important;" +
+    "  font-size: 14px !important; font-weight: 500 !important;" +
+    "  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;" +
+    "  pointer-events: none !important; user-select: none !important;" +
+    "  box-shadow: 0 8px 32px rgba(0,0,0,0.25) !important;" +
+    "  animation: np-island-in 0.4s cubic-bezier(0.16,1,0.3,1) !important;" +
+    "  max-width: calc(100vw - 32px) !important;" +
+    "}" +
+    ".np-island.np-island-out {" +
+    "  animation: np-island-out 0.3s ease forwards !important;" +
+    "}" +
+    ".np-island-spinner {" +
+    "  display: inline-block !important; width: 16px !important; height: 16px !important;" +
+    "  border: 2px solid rgba(255,255,255,0.3) !important;" +
+    "  border-top-color: #fff !important; border-radius: 50% !important;" +
+    "  animation: np-spin 0.8s linear infinite !important; flex-shrink: 0 !important;" +
+    "}" +
+    ".np-island-icon { font-size: 18px !important; line-height: 1 !important; flex-shrink: 0 !important; }" +
+    "@keyframes np-island-in {" +
+    "  from { opacity: 0; transform: translateX(-50%) translateY(-12px) scale(0.9); }" +
+    "  to   { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }" +
+    "}" +
+    "@keyframes np-island-out {" +
+    "  from { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }" +
+    "  to   { opacity: 0; transform: translateX(-50%) translateY(-12px) scale(0.9); }" +
     "}";
 
   function injectStyles() {
@@ -623,6 +749,76 @@
     styleEl.id = "np-inline-styles";
     styleEl.textContent = INLINE_STYLES;
     document.head.appendChild(styleEl);
+  }
+
+  // ============================================================
+  // 加载提示
+  // ============================================================
+
+  /**
+   * 在页面顶部「推荐选课模块」区域显示加载提示条。
+   * 每次调用会先移除旧的提示条。
+   *
+   * @param {string} text - 提示文字
+   * @param {"loading"|"success"|"error"} type - 提示类型
+   */
+  function showLoadingBar(text, type) {
+    removeLoadingBar();
+    var topArea = document.querySelector("article#course-main .top");
+    if (!topArea) return;
+    var bar = document.createElement("div");
+    bar.className = "np-loading-bar";
+    if (type === "success") bar.classList.add("np-success");
+    if (type === "error") bar.classList.add("np-error");
+    bar.id = "np-loading-bar";
+    if (type === "loading") {
+      bar.innerHTML =
+        '<span class="np-loading-spinner"></span><span>' + text + "</span>";
+    } else {
+      bar.textContent = text;
+    }
+    topArea.appendChild(bar);
+  }
+
+  /** 移除加载提示条。 */
+  function removeLoadingBar() {
+    var existing = document.getElementById("np-loading-bar");
+    if (existing) existing.remove();
+  }
+
+  /**
+   * 灵动岛提示。
+   * 页面顶部居中浮条，pointer-events: none 不阻挡任何操作。
+   *
+   * @param {"loading"|"success"|"error"} type
+   * @param {string} text - 提示文字
+   */
+  function showDynamicIsland(type, text) {
+    removeDynamicIsland();
+    var island = document.createElement("div");
+    island.className = "np-island";
+    island.id = "np-island";
+
+    if (type === "loading") {
+      island.innerHTML =
+        '<span class="np-island-spinner"></span><span>' + text + '</span>';
+    } else {
+      var icon = type === "success" ? "✅" : "⚠️";
+      island.innerHTML =
+        '<span class="np-island-icon">' + icon + '</span><span>' + text + '</span>';
+    }
+
+    document.body.appendChild(island);
+  }
+
+  /** 移除灵动岛（带出场动画）。 */
+  function removeDynamicIsland() {
+    var existing = document.getElementById("np-island");
+    if (!existing) return;
+    existing.classList.add("np-island-out");
+    setTimeout(function () {
+      if (existing.parentNode) existing.remove();
+    }, 300);
   }
 
   // ============================================================
@@ -648,6 +844,10 @@
     });
     if (newCourses.length === 0) return;
 
+    // 显示加载提示（顶部条 + 灵动岛）
+    showLoadingBar("「南评」正在加载评论...", "loading");
+    showDynamicIsland("loading", "「南评」正在加载评论...");
+
     // 批量请求 API
     var queries = newCourses.map(function (c) {
       return { code: c.code, teacher: c.teacher, name: c.name };
@@ -655,10 +855,30 @@
     var response = await batchMatch(queries);
 
     // 注入徽章
+    var matchedCount = 0;
     newCourses.forEach(function (c, i) {
       var result = response && response.results ? response.results[i] : null;
       injectBadge(c.row, result);
+      if (result && result.matched && result.matched.length > 0) {
+        matchedCount++;
+      }
     });
+
+    // 灵动岛显示结果，1.5 秒后消失
+    removeDynamicIsland();
+    if (response) {
+      showDynamicIsland("success", "加载成功，匹配到 " + matchedCount + " 条评价");
+    } else {
+      showDynamicIsland("error", "加载失败，请检查网络连接");
+    }
+    setTimeout(removeDynamicIsland, 1500);
+
+    // 顶部条显示完成状态，不消失
+    if (response) {
+      showLoadingBar("✅ 加载成功，" + newCourses.length + " 门课程中匹配到 " + matchedCount + " 条评价", "success");
+    } else {
+      showLoadingBar("⚠️ 加载失败，请检查网络连接", "error");
+    }
   }
 
   /**

@@ -300,38 +300,40 @@ def _make_review_stats_subqueries():
     return review_count_subq, avg_rating_subq
 
 
-async def _get_courses_by_code(
-    db: AsyncSession, code: str
+async def _search_courses(
+    db: AsyncSession,
+    code: str = "",
+    teacher_str: str = "",
+    name: str = "",
 ) -> list[tuple[Course, int, float | None]]:
-    """按课程号精确查找课程，附带评价统计。
+    """通用课程搜索：按给定条件 AND 组合查询，附带评价统计。
+
+    三个筛选条件均为可选，传入空字符串表示跳过该维度。
+    - code: 精确匹配
+    - teacher_str: 拆分后 OR 模糊匹配（最多前 5 位教师）
+    - name: LIKE 模糊匹配
 
     Returns:
         [(Course, review_count, avg_rating), ...] 列表
     """
-    rc_subq, ar_subq = _make_review_stats_subqueries()
-    query = select(Course, rc_subq, ar_subq).where(Course.code == code)
-    result = await db.execute(query)
-    return [(row[0], row[1] or 0, row[2]) for row in result.all()]
+    conditions: list = []
 
+    if code:
+        conditions.append(Course.code == code.strip())
 
-async def _get_courses_by_teacher(
-    db: AsyncSession, teacher_str: str
-) -> list[tuple[Course, int, float | None]]:
-    """按教师名模糊查找课程，附带评价统计。
+    if teacher_str:
+        teachers = [t.strip() for t in teacher_str.split(",") if t.strip()][:5]
+        if teachers:
+            conditions.append(or_(*[Course.teacher.like(f"%{t}%") for t in teachers]))
 
-    将页面上的教师字符串拆分，用 OR 连接多个 LIKE 条件。
-    最多取前 5 位教师，防止超长教师列表导致 SQL 膨胀。
+    if name:
+        conditions.append(Course.name.like(f"%{name.strip()}%"))
 
-    Returns:
-        [(Course, review_count, avg_rating), ...] 列表
-    """
-    teachers = [t.strip() for t in teacher_str.split(",") if t.strip()][:5]
-    if not teachers:
+    if not conditions:
         return []
 
     rc_subq, ar_subq = _make_review_stats_subqueries()
-    conditions = [Course.teacher.like(f"%{t}%") for t in teachers]
-    query = select(Course, rc_subq, ar_subq).where(or_(*conditions))
+    query = select(Course, rc_subq, ar_subq).where(and_(*conditions))
     result = await db.execute(query)
     return [(row[0], row[1] or 0, row[2]) for row in result.all()]
 
@@ -390,78 +392,82 @@ def _course_to_item(course: Course, review_count: int, avg_rating: float | None)
     )
 
 
+# 匹配策略定义：(code, teacher, name) → match_level
+# 按严格度从高到低排列，match_level 以 "+" 连接使用的字段名
+_MATCH_STRATEGIES: list[tuple[str, str, str, str]] = [
+    # (use_code, use_teacher, use_name, match_level)
+    ("code", "teacher", "name", "code+teacher+name"),  # 1. 课程号 + 教师 + 课程名
+    ("code", "teacher", "",     "code+teacher"),        # 2. 课程号 + 教师
+    ("",     "teacher", "name", "name+teacher"),        # 3. 课程名 + 教师
+    ("",     "teacher", "",     "teacher"),             # 4. 仅教师
+    ("code", "",        "",     "code"),                # 5. 仅课程号
+]
+
+
 async def _match_one(
     idx: int, query, db: AsyncSession
 ) -> MatchResult:
-    """对单个 query 执行三级回退搜索，返回最佳匹配结果。
+    """对单个 query 执行五级递进搜索，返回最佳匹配结果。
 
-    搜索策略：
-    1. 课程号精确匹配 → 按教师重叠度排序，取 top 3
-    2. 教师模糊匹配 → 按教师重叠 + 名称匹配排序，取 top 3
-    3. 都没有 → 返回空列表（插件端渲染「暂无评价」）
+    搜索策略（从严格到宽松）：
+    1. 课程号 + 教师 + 课程名
+    2. 课程号 + 教师
+    3. 课程名 + 教师
+    4. 仅教师
+    5. 仅课程号
+
+    每级只取有评价（review_count > 0）的结果。
+    命中后按教师重叠度 + 名称匹配度 + 评价数排序，取 top 3。
     """
     code = query.code.strip()
     teacher_str = query.teacher.strip()
     name = query.name.strip()
 
-    # ---- Step 1: 课程号精确匹配 ----
-    code_courses = await _get_courses_by_code(db, code)
-    code_with_reviews = [(c, rc, ar) for c, rc, ar in code_courses if rc > 0]
+    for use_code, use_teacher, use_name, match_level in _MATCH_STRATEGIES:
+        # 策略需要的字段若为空则跳过：空白不应被视为匹配
+        if use_code and not code:
+            continue
+        if use_teacher and not teacher_str:
+            continue
+        if use_name and not name:
+            continue
 
-    if code_with_reviews:
-        # 按教师重叠度 + 评价数排序
+        search_code = code if use_code else ""
+        search_teacher = teacher_str if use_teacher else ""
+        search_name = name if use_name else ""
+
+        results = await _search_courses(db, search_code, search_teacher, search_name)
+        with_reviews = [(c, rc, ar) for c, rc, ar in results if rc > 0]
+
+        if not with_reviews:
+            continue
+
+        # 命中：按教师重叠 + 名称匹配 + 评价数排序
         scored = [
-            (c, rc, ar, _teacher_overlap(teacher_str, c.teacher))
-            for c, rc, ar in code_with_reviews
+            (
+                c,
+                rc,
+                ar,
+                _teacher_overlap(teacher_str, c.teacher),
+                _name_match_score(name, c.name),
+            )
+            for c, rc, ar in with_reviews
         ]
-        # 存在有教师重叠的结果时，过滤掉重叠度为 0 的
-        with_overlap = [(c, rc, ar, o) for c, rc, ar, o in scored if o > 0]
-        candidates = with_overlap if with_overlap else scored
-        candidates.sort(key=lambda x: (x[3], x[1]), reverse=True)
+        scored.sort(key=lambda x: (x[3], x[4], x[1]), reverse=True)
 
         matched: list[MatchCourseItem] = []
-        for course, rc, ar, _ in candidates[:3]:
+        for course, rc, ar, _, _ in scored[:3]:
             reviews = await _get_top_reviews(db, course.id)
             matched.append(
                 MatchCourseItem(
                     course=_course_to_item(course, rc, ar),
                     top_reviews=reviews,
-                    match_level="code",
+                    match_level=match_level,
                 )
             )
         return MatchResult(query_index=idx, matched=matched)
 
-    # ---- Step 2: 教师模糊匹配 ----
-    if teacher_str:
-        teacher_courses = await _get_courses_by_teacher(db, teacher_str)
-        teacher_with_reviews = [(c, rc, ar) for c, rc, ar in teacher_courses if rc > 0]
-
-        if teacher_with_reviews:
-            scored = [
-                (
-                    c,
-                    rc,
-                    ar,
-                    _teacher_overlap(teacher_str, c.teacher),
-                    _name_match_score(name, c.name),
-                )
-                for c, rc, ar in teacher_with_reviews
-            ]
-            scored.sort(key=lambda x: (x[3], x[4], x[1]), reverse=True)
-
-            matched = []
-            for course, rc, ar, _, _ in scored[:3]:
-                reviews = await _get_top_reviews(db, course.id)
-                matched.append(
-                    MatchCourseItem(
-                        course=_course_to_item(course, rc, ar),
-                        top_reviews=reviews,
-                        match_level="teacher",
-                    )
-                )
-            return MatchResult(query_index=idx, matched=matched)
-
-    # ---- Step 3: 无匹配 ----
+    # 所有策略均无有评价的结果
     return MatchResult(query_index=idx, matched=[])
 
 

@@ -207,7 +207,7 @@ class TestMatchCourses:
         assert result["query_index"] == 0
         assert len(result["matched"]) >= 1
         first = result["matched"][0]
-        assert first["match_level"] == "code"
+        assert first["match_level"] == "code+teacher+name"
         assert first["course"]["code"] == "00010"
         assert first["course"]["teacher"] == "张三"
         assert first["course"]["review_count"] == 1
@@ -215,7 +215,7 @@ class TestMatchCourses:
 
     @pytest.mark.asyncio
     async def test_code_match_different_teacher(self, client, test_course, test_review):
-        """课程号匹配但教师不同 → 仍返回 code 级别匹配。"""
+        """课程号匹配但教师不同 → 回退到仅课程号匹配。"""
         response = await client.post(
             "/courses/match",
             json={
@@ -228,6 +228,8 @@ class TestMatchCourses:
         data = response.json()
         result = data["results"][0]
         assert len(result["matched"]) >= 1
+        # code+teacher+name / code+teacher 都失败（teacher 不匹配），
+        # name+teacher 失败，teacher 失败，最终 code 匹配
         assert result["matched"][0]["match_level"] == "code"
 
     @pytest.mark.asyncio
@@ -245,6 +247,8 @@ class TestMatchCourses:
         data = response.json()
         result = data["results"][0]
         assert len(result["matched"]) >= 1
+        # code+teacher+name / code+teacher 都失败（code 不匹配），
+        # name+teacher 失败（name 不匹配），teacher 匹配
         assert result["matched"][0]["match_level"] == "teacher"
         assert result["matched"][0]["course"]["teacher"] == "张三"
 
@@ -357,3 +361,56 @@ class TestMatchCourses:
         reviews = data["results"][0]["matched"][0]["top_reviews"]
         contents = [r["content"] for r in reviews]
         assert "已删除的评价" not in contents
+
+    @pytest.mark.asyncio
+    async def test_empty_teacher_not_matched_as_teacher_strategy(
+        self, client, test_course, test_review, test_course2
+    ):
+        """教师为空时不应使用 teacher 策略匹配。
+
+        test_course: code=00010, teacher=张三, 有评价
+        test_course2: code=00020, teacher=李四, 无评价
+        查询 code=00020 + teacher=空 → 不应匹配到 test_course 的教师
+        → 策略 1-4 都因 teacher 为空被跳过
+        → 策略 5 (code only) 搜到 test_course2 但无评价
+        → 返回空
+        """
+        response = await client.post(
+            "/courses/match",
+            json={
+                "queries": [
+                    {"code": "00020", "teacher": "", "name": "另一门课"}
+                ]
+            },
+        )
+        assert response.status_code == 200
+        data = response.json()
+        result = data["results"][0]
+        # test_course2 无评价，所以不应有匹配
+        assert result["matched"] == []
+
+    @pytest.mark.asyncio
+    async def test_empty_teacher_falls_back_to_code_only(
+        self, client, test_course, test_review
+    ):
+        """教师为空时跳过 teacher 策略，直接回退到 code only。
+
+        test_course: code=00010, teacher=张三, 有评价
+        查询 code=00010 + teacher=空 + name=测试课程
+        → 策略 1-4 都因 teacher 为空被跳过
+        → 策略 5 (code only) 搜到 test_course → match_level="code"
+        """
+        response = await client.post(
+            "/courses/match",
+            json={
+                "queries": [
+                    {"code": "00010", "teacher": "", "name": "测试课程"}
+                ]
+            },
+        )
+        assert response.status_code == 200
+        data = response.json()
+        result = data["results"][0]
+        assert len(result["matched"]) >= 1
+        # 只能通过 code 匹配（teacher/name 策略被跳过）
+        assert result["matched"][0]["match_level"] == "code"
