@@ -8,6 +8,9 @@ FROM python:3.13-slim-bookworm AS builder
 
 WORKDIR /build
 
+# 替换为腾讯云 apt 源（国内加速）
+RUN sed -i "s|deb.debian.org|mirrors.tencent.com|g" /etc/apt/sources.list.d/debian.sources
+
 # 安装编译 bcrypt 所需的工具链
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
@@ -17,8 +20,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # 复制依赖清单并安装到独立 venv
 COPY backend/requirements.txt .
 RUN python -m venv /opt/venv && \
-    /opt/venv/bin/pip install --no-cache-dir --upgrade pip && \
-    /opt/venv/bin/pip install --no-cache-dir -r requirements.txt
+    /opt/venv/bin/pip install --no-cache-dir -i https://mirrors.tencent.com/pypi/simple --upgrade pip && \
+    /opt/venv/bin/pip install --no-cache-dir -i https://mirrors.tencent.com/pypi/simple -r requirements.txt
 
 # ---- Stage 2: 运行时 ----
 FROM python:3.13-slim-bookworm
