@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>登录 — 南评 Nanping</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.classless.min.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- NAV-START -->
+<nav class="nanping-nav">
+  <div class="nav-brand">
+    <a href="index.html">南评 Nanping</a>
+  </div>
+  <div class="nav-links" id="nav-auth-links">
+    <a href="index.html">首页</a>
+    <a href="login.html">登录</a>
+    <a href="register.html">注册</a>
+  </div>
+</nav>
+<!-- NAV-END -->
+
+<main class="container" style="max-width: 480px;">
+  <article style="margin-top: 2rem;">
+    <h1>登录</h1>
+
+    <!-- 注册成功提示 -->
+    <p id="registered-hint" style="color: var(--nanping-success); display: none;">
+      &#10003; 注册成功，请登录
+    </p>
+
+    <form id="login-form" autocomplete="off">
+      <label>
+        邮箱
+        <input type="email" name="email" required
+               placeholder="xxx@nju.edu.cn"
+               autocomplete="email">
+      </label>
+      <label>
+        密码
+        <input type="password" name="password" required
+               minlength="6" placeholder="至少 6 位"
+               autocomplete="current-password">
+      </label>
+      <div id="login-error" class="field-error" hidden></div>
+      <button type="submit">登录</button>
+    </form>
+    <p style="text-align: center; margin-top: 1rem;">
+      还没有账号？<a href="register.html">立即注册</a>
+    </p>
+  </article>
+</main>
+
+<script type="module">
+import { getQueryParam, showToast } from "./js/utils.js";
+import { isLoggedIn, updateNav } from "./js/auth.js";
+import { login } from "./js/api.js";
+
+// ---- 已登录则跳转 ----
+if (isLoggedIn()) {
+  const redirect = getQueryParam("redirect");
+  window.location.href = redirect || "index.html";
+}
+
+// ---- 注册成功提示 ----
+if (getQueryParam("registered") === "1") {
+  document.getElementById("registered-hint").style.display = "block";
+}
+
+updateNav();
+
+// ---- 登录表单 ----
+const form = document.getElementById("login-form");
+const errorEl = document.getElementById("login-error");
+const submitBtn = form.querySelector("button[type=submit]");
+
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const formData = new FormData(form);
+  const email = formData.get("email").trim();
+  const password = formData.get("password");
+
+  // 客户端校验
+  if (!email.endsWith("@nju.edu.cn") && !email.endsWith("@smail.nju.edu.cn")) {
+    errorEl.textContent = "请使用南京大学邮箱（@nju.edu.cn 或 @smail.nju.edu.cn）";
+    errorEl.hidden = false;
+    return;
+  }
+  if (password.length < 6) {
+    errorEl.textContent = "密码至少需要 6 位";
+    errorEl.hidden = false;
+    return;
+  }
+  errorEl.hidden = true;
+
+  // 提交
+  submitBtn.disabled = true;
+  submitBtn.textContent = "登录中...";
+
+  const result = await login(email, password);
+
+  if (result.ok) {
+    showToast("登录成功", "success");
+    const redirect = getQueryParam("redirect");
+    // 短暂延迟让 toast 可见
+    setTimeout(() => {
+      window.location.href = redirect || "index.html";
+    }, 600);
+  } else {
+    submitBtn.disabled = false;
+    submitBtn.textContent = "登录";
+    if (result.status === 401) {
+      errorEl.textContent = "邮箱或密码错误";
+    } else if (result.error === "NETWORK") {
+      errorEl.textContent = "网络连接失败，请检查网络后重试";
+    } else {
+      errorEl.textContent = result.error || "登录失败，请重试";
+    }
+    errorEl.hidden = false;
+  }
+});
+</script>
+
+</body>
+</html>

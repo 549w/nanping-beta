@@ -1,0 +1,568 @@
+/* ============================================================
+   Nanping 自定义样式 — 基于 Pico.css v2 classless
+   ============================================================ */
+
+/* ---- CSS 变量覆盖 ---- */
+:root {
+  --nanping-primary: #6c47c4;
+  --nanping-primary-hover: #5a36b0;
+  --nanping-gold: #f4c542;
+  --nanping-gold-light: #f9e69c;
+  --nanping-danger: #d93526;
+  --nanping-success: #2d8a4e;
+  --nanping-info: #3a7dc9;
+  --nanping-nav-bg: #1a1a2e;
+  --nanping-radius: 8px;
+}
+
+/* ---- 顶部导航栏 ---- */
+.nanping-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 1.5rem;
+  background: var(--nanping-nav-bg);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.nanping-nav .nav-brand a {
+  color: #fff;
+  font-size: 1.2rem;
+  text-decoration: none;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.nanping-nav .nav-links {
+  display: flex;
+  gap: 1.2rem;
+  align-items: center;
+}
+
+.nanping-nav .nav-links a {
+  color: rgba(255, 255, 255, 0.85);
+  text-decoration: none;
+  font-size: 0.95rem;
+  padding: 0.3rem 0.5rem;
+  border-radius: 4px;
+  transition: color 0.2s, background 0.2s;
+}
+
+.nanping-nav .nav-links a:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.nanping-nav .nav-links .nav-logout {
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+}
+
+.nanping-nav .nav-links .nav-logout:hover {
+  color: #ff6b6b;
+}
+
+/* ---- Hero 区域 ---- */
+.hero {
+  text-align: center;
+  padding: 2.5rem 1rem 1.5rem;
+}
+
+.hero h1 {
+  font-size: 2.2rem;
+  margin-bottom: 0.4rem;
+  color: var(--nanping-nav-bg);
+}
+
+.hero p {
+  color: #666;
+  font-size: 1.05rem;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+/* ---- 搜索区域 ---- */
+.search-section {
+  max-width: 720px;
+  margin: 0 auto 2rem;
+  padding: 0 1rem;
+}
+
+.search-section form {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.search-section form input {
+  flex: 1;
+  min-width: 140px;
+}
+
+.search-section form button {
+  flex-shrink: 0;
+}
+
+/* ---- 课程卡片网格 ---- */
+.course-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.course-card {
+  display: block;
+  padding: 1.2rem;
+  border: 1px solid var(--pico-muted-border-color, #ddd);
+  border-radius: var(--nanping-radius);
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow 0.2s, transform 0.15s, border-color 0.2s;
+  background: var(--pico-card-background-color, #fff);
+  cursor: pointer;
+}
+
+.course-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+  border-color: var(--nanping-primary);
+}
+
+.course-card .card-code {
+  font-size: 0.8rem;
+  color: #888;
+  font-family: monospace;
+}
+
+.course-card .card-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0.2rem 0 0.4rem;
+  color: #222;
+}
+
+.course-card .card-meta {
+  font-size: 0.88rem;
+  color: #666;
+  margin-bottom: 0.5rem;
+}
+
+.course-card .card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.5rem;
+  font-size: 0.88rem;
+}
+
+.course-card .card-footer .review-count {
+  color: #888;
+  font-size: 0.82rem;
+}
+
+/* ---- 课程详情头部 ---- */
+.course-header {
+  background: var(--pico-card-background-color, #fff);
+  border-left: 4px solid var(--nanping-primary);
+  padding: 1.5rem;
+  border-radius: var(--nanping-radius);
+  margin-bottom: 2rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+
+.course-header h1 {
+  margin-bottom: 0.2rem;
+}
+
+.course-header .header-code {
+  font-family: monospace;
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.course-header .header-meta {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  color: #555;
+  font-size: 0.95rem;
+}
+
+.course-header .header-stats {
+  display: flex;
+  gap: 1.2rem;
+  align-items: center;
+  margin-top: 0.6rem;
+}
+
+.course-header .header-avg {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--nanping-gold);
+}
+
+/* ---- 评价卡片 ---- */
+.review-card {
+  border: 1px solid var(--pico-muted-border-color, #ddd);
+  border-left: 3px solid var(--nanping-primary);
+  border-radius: var(--nanping-radius);
+  padding: 1rem 1.2rem;
+  margin-bottom: 0.8rem;
+  background: var(--pico-card-background-color, #fff);
+}
+
+.review-card.is-anonymous {
+  border-left-color: #aaa;
+}
+
+.review-card .review-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.5rem;
+}
+
+.review-card .review-content {
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.review-card .review-footer {
+  margin-top: 0.6rem;
+  font-size: 0.82rem;
+  color: #888;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+}
+
+.review-card .review-footer .semester-badge {
+  display: inline-block;
+  background: #eef;
+  color: #556;
+  padding: 0.1rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.78rem;
+}
+
+/* ---- 星星评分展示 ---- */
+.star-rating {
+  display: inline-flex;
+  gap: 2px;
+  color: var(--nanping-gold);
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.star-rating .star-empty {
+  color: #ccc;
+}
+
+/* ---- 星星评分输入 ---- */
+.star-input {
+  display: inline-flex;
+  gap: 4px;
+  font-size: 1.8rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.star-input .star {
+  color: #ccc;
+  transition: color 0.1s;
+}
+
+.star-input .star.active,
+.star-input .star.hover {
+  color: var(--nanping-gold);
+}
+
+/* ---- Toast 通知 ---- */
+.toast-container {
+  position: fixed;
+  bottom: 1.2rem;
+  right: 1.2rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  pointer-events: none;
+}
+
+.toast {
+  padding: 0.7rem 1.2rem;
+  border-radius: var(--nanping-radius);
+  color: #fff;
+  font-size: 0.92rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  animation: toast-in 0.3s ease-out;
+  pointer-events: auto;
+  max-width: 360px;
+  word-break: break-word;
+}
+
+.toast.toast-removing {
+  animation: toast-out 0.25s ease-in forwards;
+}
+
+.toast.toast-success {
+  background: var(--nanping-success);
+}
+
+.toast.toast-error {
+  background: var(--nanping-danger);
+}
+
+.toast.toast-info {
+  background: var(--nanping-info);
+}
+
+@keyframes toast-in {
+  from {
+    transform: translateX(120%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes toast-out {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(120%);
+    opacity: 0;
+  }
+}
+
+/* ---- 加载动画 ---- */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  gap: 0.8rem;
+  color: #888;
+}
+
+.loading-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--pico-muted-border-color, #ddd);
+  border-top-color: var(--nanping-primary);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---- 按钮加载态 ---- */
+button.is-loading {
+  position: relative;
+  pointer-events: none;
+  opacity: 0.75;
+}
+
+button .btn-spinner {
+  display: none;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.5s linear infinite;
+  vertical-align: middle;
+  margin-right: 0.3rem;
+}
+
+button.is-loading .btn-spinner {
+  display: inline-block;
+}
+
+/* ---- 空状态 ---- */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #999;
+}
+
+.empty-state .empty-icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.empty-state p {
+  font-size: 0.95rem;
+}
+
+/* ---- 表单辅助 ---- */
+.field-error {
+  color: var(--nanping-danger);
+  font-size: 0.85rem;
+  margin-top: 0.2rem;
+}
+
+.field-hint {
+  color: #999;
+  font-size: 0.82rem;
+}
+
+.char-counter {
+  text-align: right;
+  font-size: 0.8rem;
+  color: #999;
+  margin-top: 0.2rem;
+}
+
+.char-counter.near-limit {
+  color: #e67e22;
+}
+
+.char-counter.at-limit {
+  color: var(--nanping-danger);
+}
+
+/* ---- 分页 ---- */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.8rem;
+  margin-top: 1.5rem;
+  padding: 0.5rem 0;
+}
+
+.pagination .page-info {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.pagination button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ---- 添加评价表单区域 ---- */
+.add-review-section {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--pico-muted-border-color, #ddd);
+}
+
+.add-review-section h3 {
+  margin-bottom: 1rem;
+}
+
+.login-prompt {
+  text-align: center;
+  padding: 1.5rem;
+  background: var(--pico-card-background-color, #fff);
+  border-radius: var(--nanping-radius);
+  border: 1px dashed var(--pico-muted-border-color, #ddd);
+}
+
+/* ---- 我的评价页面 ---- */
+.my-review-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.my-review-card .review-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.my-review-card .review-info .course-link {
+  font-weight: 600;
+  font-size: 1.05rem;
+  text-decoration: none;
+}
+
+.my-review-card .review-info .course-link:hover {
+  text-decoration: underline;
+}
+
+.my-review-card .review-actions {
+  flex-shrink: 0;
+}
+
+.my-review-card .review-actions .btn-delete {
+  background: none;
+  border: 1px solid var(--nanping-danger);
+  color: var(--nanping-danger);
+  padding: 0.3rem 0.8rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background 0.2s, color 0.2s;
+}
+
+.my-review-card .review-actions .btn-delete:hover {
+  background: var(--nanping-danger);
+  color: #fff;
+}
+
+/* ---- 响应式：移动端 ---- */
+@media (max-width: 768px) {
+  .nanping-nav {
+    flex-direction: column;
+    gap: 0.4rem;
+    padding: 0.5rem 1rem;
+  }
+
+  .nanping-nav .nav-links {
+    gap: 0.6rem;
+    font-size: 0.88rem;
+  }
+
+  .hero h1 {
+    font-size: 1.6rem;
+  }
+
+  .search-section form {
+    flex-direction: column;
+  }
+
+  .course-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .course-header .header-meta {
+    flex-direction: column;
+    gap: 0.3rem;
+    align-items: flex-start;
+  }
+
+  .star-input {
+    font-size: 1.5rem;
+  }
+
+  .toast-container {
+    left: 1rem;
+    right: 1rem;
+    bottom: 0.8rem;
+  }
+
+  .toast {
+    max-width: 100%;
+  }
+}

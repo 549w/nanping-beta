@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>注册 — 南评 Nanping</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.classless.min.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- NAV-START -->
+<nav class="nanping-nav">
+  <div class="nav-brand">
+    <a href="index.html">南评 Nanping</a>
+  </div>
+  <div class="nav-links" id="nav-auth-links">
+    <a href="index.html">首页</a>
+    <a href="login.html">登录</a>
+    <a href="register.html">注册</a>
+  </div>
+</nav>
+<!-- NAV-END -->
+
+<main class="container" style="max-width: 480px;">
+  <article style="margin-top: 2rem;">
+    <h1>注册</h1>
+
+    <form id="register-form" autocomplete="off">
+      <!-- Step 1：邮箱 + 发送验证码 -->
+      <div id="step-1">
+        <label>
+          南大邮箱
+          <input type="email" id="reg-email" required
+                 placeholder="xxx@nju.edu.cn"
+                 autocomplete="email">
+        </label>
+        <small class="field-hint">请使用 @nju.edu.cn 或 @smail.nju.edu.cn 邮箱</small>
+        <div id="email-error" class="field-error" hidden></div>
+        <button type="button" id="send-code-btn" style="margin-top: 0.5rem;">发送验证码</button>
+        <div id="send-success-hint" class="field-hint" hidden>
+          &#10003; 验证码已发送（开发模式下验证码为 <strong>123456</strong>）
+        </div>
+      </div>
+
+      <!-- Step 2：验证码 + 密码（默认隐藏） -->
+      <div id="step-2" hidden>
+        <label>
+          验证码
+          <input type="text" id="reg-code" required
+                 maxlength="6" pattern="\d{6}"
+                 placeholder="6 位数字验证码"
+                 inputmode="numeric" autocomplete="one-time-code">
+        </label>
+        <label>
+          密码
+          <input type="password" id="reg-password" required
+                 minlength="6" placeholder="至少 6 位"
+                 autocomplete="new-password">
+        </label>
+        <label>
+          确认密码
+          <input type="password" id="reg-password-confirm" required
+                 minlength="6" placeholder="再次输入密码"
+                 autocomplete="new-password">
+        </label>
+        <div id="register-error" class="field-error" hidden></div>
+        <button type="submit" id="register-submit-btn">注册</button>
+      </div>
+    </form>
+
+    <p style="text-align: center; margin-top: 1rem;">
+      已有账号？<a href="login.html">立即登录</a>
+    </p>
+  </article>
+</main>
+
+<script type="module">
+import { showToast } from "./js/utils.js";
+import { isLoggedIn, updateNav } from "./js/auth.js";
+import { sendCode, register } from "./js/api.js";
+
+// ---- 已登录则跳转 ----
+if (isLoggedIn()) {
+  window.location.href = "index.html";
+}
+
+updateNav();
+
+// ---- DOM 元素 ----
+const emailInput = document.getElementById("reg-email");
+const sendCodeBtn = document.getElementById("send-code-btn");
+const emailError = document.getElementById("email-error");
+const sendSuccessHint = document.getElementById("send-success-hint");
+const step2 = document.getElementById("step-2");
+const regCode = document.getElementById("reg-code");
+const regPassword = document.getElementById("reg-password");
+const regPasswordConfirm = document.getElementById("reg-password-confirm");
+const registerError = document.getElementById("register-error");
+const registerSubmitBtn = document.getElementById("register-submit-btn");
+
+let cooldownTimer = null;
+
+// ---- Step 1：发送验证码 ----
+sendCodeBtn.addEventListener("click", async () => {
+  const email = emailInput.value.trim();
+
+  // 客户端校验邮箱
+  if (!email.endsWith("@nju.edu.cn") && !email.endsWith("@smail.nju.edu.cn")) {
+    emailError.textContent = "请使用南京大学邮箱（@nju.edu.cn 或 @smail.nju.edu.cn）";
+    emailError.hidden = false;
+    return;
+  }
+  emailError.hidden = true;
+
+  sendCodeBtn.disabled = true;
+  sendCodeBtn.textContent = "发送中...";
+
+  const result = await sendCode(email);
+
+  if (result.ok) {
+    // 成功：显示 Step 2
+    step2.hidden = false;
+    sendSuccessHint.hidden = false;
+    showToast("验证码已发送", "success");
+    regCode.focus();
+
+    // 60 秒冷却
+    let seconds = 60;
+    sendCodeBtn.textContent = `${seconds} 秒后重发`;
+    cooldownTimer = setInterval(() => {
+      seconds--;
+      if (seconds <= 0) {
+        clearInterval(cooldownTimer);
+        cooldownTimer = null;
+        sendCodeBtn.disabled = false;
+        sendCodeBtn.textContent = "发送验证码";
+      } else {
+        sendCodeBtn.textContent = `${seconds} 秒后重发`;
+      }
+    }, 1000);
+  } else {
+    sendCodeBtn.disabled = false;
+    sendCodeBtn.textContent = "发送验证码";
+    if (result.status === 429) {
+      emailError.textContent = "发送过于频繁，请 60 秒后再试";
+    } else if (result.error === "NETWORK") {
+      emailError.textContent = "网络连接失败，请检查网络后重试";
+    } else {
+      emailError.textContent = result.error || "发送失败，请重试";
+    }
+    emailError.hidden = false;
+  }
+});
+
+// ---- Step 2：注册 ----
+const form = document.getElementById("register-form");
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const email = emailInput.value.trim();
+  const code = regCode.value.trim();
+  const password = regPassword.value;
+  const passwordConfirm = regPasswordConfirm.value;
+
+  // 客户端校验
+  if (!/^\d{6}$/.test(code)) {
+    registerError.textContent = "验证码为 6 位数字";
+    registerError.hidden = false;
+    return;
+  }
+  if (password.length < 6) {
+    registerError.textContent = "密码至少需要 6 位";
+    registerError.hidden = false;
+    return;
+  }
+  if (password !== passwordConfirm) {
+    registerError.textContent = "两次输入的密码不一致";
+    registerError.hidden = false;
+    return;
+  }
+  registerError.hidden = true;
+
+  // 提交
+  registerSubmitBtn.disabled = true;
+  registerSubmitBtn.textContent = "注册中...";
+
+  const result = await register(email, code, password);
+
+  if (result.ok) {
+    showToast("注册成功，请登录", "success");
+    setTimeout(() => {
+      window.location.href = "login.html?registered=1";
+    }, 600);
+  } else {
+    registerSubmitBtn.disabled = false;
+    registerSubmitBtn.textContent = "注册";
+    registerError.textContent = result.error || "注册失败，请重试";
+    registerError.hidden = false;
+  }
+});
+</script>
+
+</body>
+</html>

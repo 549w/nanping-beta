@@ -76,6 +76,31 @@ class TestSearchCourses:
         assert item["avg_rating"] == 4.0
 
     @pytest.mark.asyncio
+    async def test_search_multiple_params_and_logic(self, client, test_course, test_course2):
+        """多字段搜索应使用 AND 逻辑，只返回同时满足所有条件的课程。"""
+        # 搜索 test_course 的 code + name，应该能找到
+        response = await client.get(
+            "/courses",
+            params={"code": test_course.code, "name": test_course.name},
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total"] >= 1
+        for item in data["items"]:
+            assert item["code"] == test_course.code
+            assert test_course.name in item["name"]
+
+        # 搜索 test_course 的 code + 不存在的 name，应该返回空
+        response = await client.get(
+            "/courses",
+            params={"code": test_course.code, "name": "不存在的课程名"},
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total"] == 0
+        assert data["items"] == []
+
+    @pytest.mark.asyncio
     async def test_avg_rating_null_without_reviews(self, client, test_course2):
         """无评价的课程 avg_rating 应为 null，review_count 应为 0。"""
         response = await client.get("/courses", params={"code": test_course2.code})

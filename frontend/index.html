@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>南评 Nanping — 南京大学课程评价</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.classless.min.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- NAV-START -->
+<nav class="nanping-nav">
+  <div class="nav-brand">
+    <a href="index.html">南评 Nanping</a>
+  </div>
+  <div class="nav-links" id="nav-auth-links">
+    <a href="index.html">首页</a>
+    <a href="login.html">登录</a>
+    <a href="register.html">注册</a>
+  </div>
+</nav>
+<!-- NAV-END -->
+
+<main class="container">
+  <!-- Hero -->
+  <section class="hero">
+    <h1>南评 Nanping</h1>
+    <p>南京大学课程评价平台 — 查看真实课程评价，为选课提供参考</p>
+  </section>
+
+  <!-- 搜索表单 -->
+  <section class="search-section">
+    <form id="search-form" autocomplete="off">
+      <input type="text" name="code" placeholder="课程号，如 00010" aria-label="课程号">
+      <input type="text" name="name" placeholder="课程名称" aria-label="课程名称">
+      <input type="text" name="teacher" placeholder="授课教师" aria-label="授课教师">
+      <button type="submit">搜索</button>
+    </form>
+  </section>
+
+  <!-- 搜索结果 -->
+  <section id="results-section">
+    <div class="empty-state" id="initial-state">
+      <div class="empty-icon">&#128269;</div>
+      <p>请输入搜索条件开始搜索课程</p>
+    </div>
+  </section>
+</main>
+
+<script type="module">
+import { escapeHtml, renderStars, renderPagination, showToast } from "./js/utils.js";
+import { updateNav } from "./js/auth.js";
+import { searchCourses } from "./js/api.js";
+
+// ---- 页面状态 ----
+let currentPage = 1;
+let currentPageSize = 20;
+let lastSearchParams = null;
+
+// ---- 初始化 ----
+updateNav();
+
+// ---- 搜索表单 ----
+const searchForm = document.getElementById("search-form");
+const resultsSection = document.getElementById("results-section");
+
+searchForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const formData = new FormData(searchForm);
+  const code = formData.get("code").trim();
+  const name = formData.get("name").trim();
+  const teacher = formData.get("teacher").trim();
+
+  // 客户端校验：至少一个搜索条件
+  if (!code && !name && !teacher) {
+    showToast("请至少填写一个搜索条件", "error");
+    return;
+  }
+
+  lastSearchParams = { code, name, teacher };
+  currentPage = 1;
+  await doSearch();
+});
+
+// ---- 执行搜索 ----
+async function doSearch() {
+  const submitBtn = searchForm.querySelector("button[type=submit]");
+  submitBtn.disabled = true;
+  submitBtn.textContent = "搜索中...";
+
+  resultsSection.innerHTML = `
+    <div class="loading-container">
+      <div class="loading-spinner"></div>
+      <p>搜索中...</p>
+    </div>
+  `;
+
+  const result = await searchCourses({
+    ...lastSearchParams,
+    page: currentPage,
+    pageSize: currentPageSize,
+  });
+
+  submitBtn.disabled = false;
+  submitBtn.textContent = "搜索";
+
+  if (!result.ok) {
+    resultsSection.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">&#9888;</div>
+        <p>${escapeHtml(result.error || "搜索失败，请重试")}</p>
+      </div>
+    `;
+    showToast(result.error || "搜索失败", "error");
+    return;
+  }
+
+  renderResults(result.data);
+}
+
+// ---- 渲染结果 ----
+function renderResults(data) {
+  const { items, total, page, page_size } = data;
+
+  if (items.length === 0) {
+    resultsSection.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">&#128533;</div>
+        <p>未找到相关课程，请尝试其他搜索条件</p>
+      </div>
+    `;
+    return;
+  }
+
+  let html = '<div class="course-grid">';
+  for (const course of items) {
+    const courseJson = escapeHtml(JSON.stringify({
+      id: course.id,
+      code: course.code,
+      name: course.name,
+      teacher: course.teacher,
+      department: course.department,
+      credits: course.credits,
+      avg_rating: course.avg_rating,
+      review_count: course.review_count,
+    }));
+    html += `
+      <div class="course-card" data-course='${courseJson}' tabindex="0" role="link">
+        <div class="card-code">${escapeHtml(course.code)}</div>
+        <div class="card-name">${escapeHtml(course.name)}</div>
+        <div class="card-meta">
+          教师：${escapeHtml(course.teacher)}
+          ${course.department ? ` · ${escapeHtml(course.department)}` : ""}
+          ${course.credits != null ? ` · ${course.credits} 学分` : ""}
+        </div>
+        <div class="card-footer">
+          <span>${renderStars(course.avg_rating)}</span>
+          <span class="review-count">${course.review_count} 条评价</span>
+        </div>
+      </div>`;
+  }
+  html += "</div>";
+
+  // 分页
+  html += renderPagination(page, page_size, total);
+
+  resultsSection.innerHTML = html;
+
+  // 绑定课程卡片点击
+  resultsSection.querySelectorAll(".course-card").forEach((card) => {
+    const clickHandler = () => {
+      const courseData = JSON.parse(card.dataset.course);
+      sessionStorage.setItem(`course_${courseData.id}`, JSON.stringify(courseData));
+      window.location.href = `course.html?id=${courseData.id}`;
+    };
+    card.addEventListener("click", clickHandler);
+    card.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        clickHandler();
+      }
+    });
+  });
+
+  // 绑定分页按钮
+  resultsSection.querySelectorAll(".pagination button[data-page]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const newPage = parseInt(btn.dataset.page, 10);
+      if (newPage < 1 || newPage > Math.ceil(total / page_size)) return;
+      currentPage = newPage;
+      resultsSection.scrollIntoView({ behavior: "smooth" });
+      await doSearch();
+    });
+  });
+}
+</script>
+
+</body>
+</html>

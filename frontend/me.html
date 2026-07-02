@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>我的评价 — 南评 Nanping</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.classless.min.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- NAV-START -->
+<nav class="nanping-nav">
+  <div class="nav-brand">
+    <a href="index.html">南评 Nanping</a>
+  </div>
+  <div class="nav-links" id="nav-auth-links">
+    <a href="index.html">首页</a>
+    <a href="login.html">登录</a>
+    <a href="register.html">注册</a>
+  </div>
+</nav>
+<!-- NAV-END -->
+
+<main class="container">
+  <h1>我的评价</h1>
+  <section id="my-reviews-section">
+    <div class="loading-container">
+      <div class="loading-spinner"></div>
+      <p>加载中...</p>
+    </div>
+  </section>
+</main>
+
+<script type="module">
+import { escapeHtml, formatDate, getQueryParam, renderStars, renderPagination, showToast, setButtonLoading } from "./js/utils.js";
+import { isLoggedIn, requireAuth, removeToken, updateNav } from "./js/auth.js";
+import { getMyReviews, deleteReview } from "./js/api.js";
+
+// ---- 鉴权 ----
+if (!isLoggedIn()) {
+  requireAuth();
+}
+
+updateNav();
+
+// ---- 状态 ----
+let currentPage = 1;
+
+// ---- 加载评价 ----
+async function loadMyReviews() {
+  const section = document.getElementById("my-reviews-section");
+  section.innerHTML = `
+    <div class="loading-container">
+      <div class="loading-spinner"></div>
+      <p>加载中...</p>
+    </div>`;
+
+  const result = await getMyReviews(currentPage, 20);
+
+  // 401 处理
+  if (!result.ok && result.error === "UNAUTHORIZED") {
+    removeToken();
+    requireAuth();
+    return;
+  }
+
+  if (!result.ok) {
+    section.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">&#9888;</div>
+        <p>加载失败：${escapeHtml(result.error || "请重试")}</p>
+      </div>`;
+    return;
+  }
+
+  renderReviews(result.data);
+}
+
+function renderReviews(data) {
+  const section = document.getElementById("my-reviews-section");
+  const { items, total, page, page_size } = data;
+
+  if (items.length === 0) {
+    section.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">&#128221;</div>
+        <p>你还没有发表过评价</p>
+        <p><a href="index.html">去搜索课程，留下你的第一条评价吧</a></p>
+      </div>`;
+    return;
+  }
+
+  let html = "";
+  for (const review of items) {
+    // 缓存课程信息以便导航
+    const courseInfo = {
+      id: review.course_id,
+      name: review.course_name,
+      code: review.course_code,
+    };
+
+    html += `
+      <div class="review-card" id="review-${review.id}">
+        <div class="my-review-card">
+          <div class="review-info">
+            <a class="course-link" href="course.html?id=${review.course_id}"
+               data-course='${escapeHtml(JSON.stringify(courseInfo))}'>
+              ${escapeHtml(review.course_name || review.course_code || `课程 #${review.course_id}`)}
+              ${review.course_code ? `<span style="color:#888;font-size:0.85rem;font-weight:normal;">(${escapeHtml(review.course_code)})</span>` : ""}
+            </a>
+            <div style="margin-top: 0.3rem;">
+              ${renderStars(review.rating)}
+            </div>
+            <div class="review-content" style="margin-top: 0.4rem; font-size: 0.92rem; color: #555;">
+              ${escapeHtml(review.content.length > 150 ? review.content.slice(0, 150) + "..." : review.content)}
+            </div>
+            <div class="review-footer">
+              ${review.semester ? `<span class="semester-badge">${escapeHtml(review.semester)}</span>` : ""}
+              <span>${review.is_anonymous ? "匿名发布" : "实名发布"}</span>
+              <span>${formatDate(review.created_at)}</span>
+            </div>
+          </div>
+          <div class="review-actions">
+            <button class="btn-delete" data-review-id="${review.id}">删除</button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  html += renderPagination(page, page_size, total);
+  section.innerHTML = html;
+
+  // 课程链接：缓存课程信息到 sessionStorage
+  section.querySelectorAll(".course-link").forEach((link) => {
+    link.addEventListener("click", (e) => {
+      const courseInfo = JSON.parse(link.dataset.course);
+      if (courseInfo.id) {
+        sessionStorage.setItem(`course_${courseInfo.id}`, JSON.stringify(courseInfo));
+      }
+    });
+  });
+
+  // 分页
+  section.querySelectorAll(".pagination button[data-page]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const newPage = parseInt(btn.dataset.page, 10);
+      if (newPage < 1 || newPage > Math.ceil(total / page_size)) return;
+      currentPage = newPage;
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      loadMyReviews();
+    });
+  });
+
+  // 删除按钮
+  section.querySelectorAll(".btn-delete").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const reviewId = parseInt(btn.dataset.reviewId, 10);
+      if (!confirm("确定要删除这条评价吗？此操作不可撤销。")) return;
+
+      setButtonLoading(btn, true);
+      btn.textContent = "删除中...";
+      btn.classList.add("is-loading");
+
+      const result = await deleteReview(reviewId);
+
+      if (!result.ok && result.error === "UNAUTHORIZED") {
+        removeToken();
+        requireAuth();
+        return;
+      }
+
+      if (result.ok) {
+        showToast("评价已删除", "success");
+        // 动画移除卡片
+        const card = document.getElementById(`review-${reviewId}`);
+        if (card) {
+          card.style.transition = "opacity 0.3s, transform 0.3s";
+          card.style.opacity = "0";
+          card.style.transform = "translateX(20px)";
+          setTimeout(() => {
+            // 如果删除后当前页为空且不是第一页，回到前一页
+            const remaining = section.querySelectorAll(".review-card").length;
+            if (remaining <= 1 && currentPage > 1) {
+              currentPage--;
+            }
+            loadMyReviews();
+          }, 300);
+        }
+      } else {
+        setButtonLoading(btn, false);
+        btn.textContent = "删除";
+        btn.classList.remove("is-loading");
+        showToast(result.error || "删除失败", "error");
+      }
+    });
+  });
+}
+
+// ---- 启动 ----
+loadMyReviews();
+</script>
+
+</body>
+</html>

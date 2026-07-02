@@ -4,7 +4,7 @@ GET /courses — 搜索课程，支持按课程号 / 名称 / 教师搜索，分
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import func, select, or_
+from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..database import get_db
@@ -66,14 +66,14 @@ async def search_courses(
     )
 
     # 查询总数
-    count_query = select(func.count(Course.id)).where(or_(*conditions))
+    count_query = select(func.count(Course.id)).where(and_(*conditions))
     total = (await db.execute(count_query)).scalar() or 0
 
     # 主查询
     offset = (page - 1) * page_size
     query = (
         select(Course, review_count_subq, avg_rating_subq)
-        .where(or_(*conditions))
+        .where(and_(*conditions))
         .order_by(Course.id)
         .offset(offset)
         .limit(page_size)

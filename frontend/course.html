@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>课程详情 — 南评 Nanping</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.classless.min.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- NAV-START -->
+<nav class="nanping-nav">
+  <div class="nav-brand">
+    <a href="index.html">南评 Nanping</a>
+  </div>
+  <div class="nav-links" id="nav-auth-links">
+    <a href="index.html">首页</a>
+    <a href="login.html">登录</a>
+    <a href="register.html">注册</a>
+  </div>
+</nav>
+<!-- NAV-END -->
+
+<main class="container">
+
+  <!-- 课程信息头部 -->
+  <section id="course-header-section">
+    <div class="loading-container">
+      <div class="loading-spinner"></div>
+      <p>加载课程信息...</p>
+    </div>
+  </section>
+
+  <!-- 评价列表 -->
+  <section id="review-list-section">
+    <h2>课程评价</h2>
+    <div id="review-list">
+      <div class="loading-container">
+        <div class="loading-spinner"></div>
+        <p>加载评价...</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 添加评价 -->
+  <section id="add-review-section" class="add-review-section">
+    <h3>添加评价</h3>
+    <div id="add-review-content">
+      <div class="loading-container">
+        <div class="loading-spinner"></div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script type="module">
+import { escapeHtml, formatDate, getQueryParam, renderStars, renderPagination, showToast, setButtonLoading } from "./js/utils.js";
+import { isLoggedIn, requireAuth, removeToken, updateNav } from "./js/auth.js";
+import { searchCourses, getReviews, addReview } from "./js/api.js";
+
+// ---- 初始化 ----
+const courseIdStr = getQueryParam("id");
+if (!courseIdStr) {
+  document.getElementById("course-header-section").innerHTML = `
+    <div class="empty-state">
+      <div class="empty-icon">&#9888;</div>
+      <p>请在<a href="index.html">课程搜索页面</a>选择一门课程</p>
+    </div>`;
+  document.getElementById("review-list-section").hidden = true;
+  document.getElementById("add-review-section").hidden = true;
+}
+
+const courseId = parseInt(courseIdStr, 10);
+updateNav();
+
+// ---- 加载课程信息 ----
+let courseData = null;
+
+async function loadCourseInfo() {
+  const headerSection = document.getElementById("course-header-section");
+
+  // 尝试从 sessionStorage 恢复课程元数据
+  const cached = sessionStorage.getItem(`course_${courseId}`);
+  if (cached) {
+    try {
+      courseData = JSON.parse(cached);
+      renderCourseHeader(courseData);
+      return;
+    } catch { /* 忽略缓存解析错误 */ }
+  }
+
+  // 回退：通过搜索 courseId 对应的课程（后端无 GET /courses/{id}）
+  // 先用 review 接口验证课程是否存在
+  const reviewCheck = await getReviews(courseId, 1, 1);
+  if (!reviewCheck.ok && reviewCheck.status === 404) {
+    headerSection.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">&#128533;</div>
+        <p>课程不存在或已删除</p>
+        <p><a href="index.html">返回搜索</a></p>
+      </div>`;
+    document.getElementById("review-list-section").hidden = true;
+    document.getElementById("add-review-section").hidden = true;
+    return;
+  }
+
+  // 无法获取详细元数据时显示最小头部
+  if (!courseData) {
+    headerSection.innerHTML = `
+      <div class="course-header">
+        <h1>课程 #${courseId}</h1>
+        <p class="header-code">课程信息需从搜索页进入查看</p>
+        <p><a href="index.html">前往搜索课程</a></p>
+      </div>`;
+  }
+}
+
+function renderCourseHeader(data) {
+  const headerSection = document.getElementById("course-header-section");
+  headerSection.innerHTML = `
+    <div class="course-header">
+      <p class="header-code">${escapeHtml(data.code)}</p>
+      <h1>${escapeHtml(data.name)}</h1>
+      <div class="header-meta">
+        <span>教师：${escapeHtml(data.teacher)}</span>
+        ${data.department ? `<span>开课院系：${escapeHtml(data.department)}</span>` : ""}
+        ${data.credits != null ? `<span>${data.credits} 学分</span>` : ""}
+      </div>
+      <div class="header-stats">
+        <span>${renderStars(data.avg_rating)}</span>
+        <span class="header-avg">${data.avg_rating != null ? data.avg_rating.toFixed(1) + " 分" : ""}</span>
+        <span>${data.review_count || 0} 条评价</span>
+      </div>
+    </div>`;
+}
+
+// ---- 加载评价列表 ----
+let reviewPage = 1;
+
+async function loadReviews() {
+  const listEl = document.getElementById("review-list");
+  listEl.innerHTML = `
+    <div class="loading-container">
+      <div class="loading-spinner"></div>
+      <p>加载评价...</p>
+    </div>`;
+
+  const result = await getReviews(courseId, reviewPage, 20);
+
+  // 401 处理
+  if (!result.ok && result.error === "UNAUTHORIZED") {
+    removeToken();
+    requireAuth();
+    return;
+  }
+
+  if (!result.ok) {
+    listEl.innerHTML = `
+      <div class="empty-state">
+        <p>加载评价失败：${escapeHtml(result.error || "请重试")}</p>
+      </div>`;
+    return;
+  }
+
+  renderReviews(result.data);
+}
+
+function renderReviews(data) {
+  const listEl = document.getElementById("review-list");
+  const { items, total, page, page_size } = data;
+
+  if (items.length === 0) {
+    listEl.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">&#128221;</div>
+        <p>暂无评价，成为第一个评价的人吧！</p>
+      </div>`;
+    return;
+  }
+
+  let html = "";
+  for (const review of items) {
+    html += `
+      <div class="review-card${review.is_anonymous ? " is-anonymous" : ""}">
+        <div class="review-header">
+          <span>${renderStars(review.rating)}</span>
+        </div>
+        <div class="review-content">${escapeHtml(review.content)}</div>
+        <div class="review-footer">
+          ${review.semester ? `<span class="semester-badge">${escapeHtml(review.semester)}</span>` : ""}
+          <span>${review.is_anonymous ? "匿名" : escapeHtml(review.user_email || "未知")}</span>
+          <span>${formatDate(review.created_at)}</span>
+        </div>
+      </div>`;
+  }
+
+  html += renderPagination(page, page_size, total);
+  listEl.innerHTML = html;
+
+  // 分页事件
+  listEl.querySelectorAll(".pagination button[data-page]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const newPage = parseInt(btn.dataset.page, 10);
+      if (newPage < 1 || newPage > Math.ceil(total / page_size)) return;
+      reviewPage = newPage;
+      document.getElementById("review-list-section").scrollIntoView({ behavior: "smooth" });
+      loadReviews();
+    });
+  });
+}
+
+// ---- 添加评价表单 ----
+function renderAddReviewForm() {
+  const container = document.getElementById("add-review-content");
+
+  if (!isLoggedIn()) {
+    container.innerHTML = `
+      <div class="login-prompt">
+        <p><a href="login.html?redirect=${encodeURIComponent(window.location.href)}">登录</a>后即可评价</p>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = `
+    <form id="review-form" autocomplete="off">
+      <!-- 星星评分 -->
+      <label>评分</label>
+      <div class="star-input" id="star-input">
+        <span class="star" data-value="1">★</span>
+        <span class="star" data-value="2">★</span>
+        <span class="star" data-value="3">★</span>
+        <span class="star" data-value="4">★</span>
+        <span class="star" data-value="5">★</span>
+      </div>
+      <input type="hidden" name="rating" id="rating-value" value="0">
+      <div id="rating-error" class="field-error" hidden>请选择评分</div>
+
+      <!-- 评价内容 -->
+      <label style="margin-top: 1rem;">
+        评价内容
+        <textarea name="content" id="review-content" rows="5"
+                  placeholder="写下你对这门课的评价（1-5000 字）"
+                  maxlength="5000" required></textarea>
+        <div class="char-counter" id="char-counter">0/5000</div>
+      </label>
+      <div id="content-error" class="field-error" hidden>请输入评价内容</div>
+
+      <!-- 学期 -->
+      <label>
+        学期（可选）
+        <input type="text" name="semester" placeholder="如 2025秋">
+      </label>
+
+      <!-- 匿名 -->
+      <label>
+        <input type="checkbox" name="is_anonymous">
+        匿名发布（评价中将不显示你的邮箱）
+      </label>
+
+      <button type="submit" id="submit-review-btn">提交评价</button>
+      <div id="submit-error" class="field-error" hidden></div>
+    </form>`;
+
+  bindStarInput();
+  bindCharCounter();
+  bindReviewForm();
+}
+
+// ---- 星星输入交互 ----
+function bindStarInput() {
+  const starContainer = document.getElementById("star-input");
+  const ratingInput = document.getElementById("rating-value");
+  const stars = starContainer.querySelectorAll(".star");
+
+  function highlight(value) {
+    stars.forEach((s) => {
+      const v = parseInt(s.dataset.value, 10);
+      s.classList.toggle("active", v <= value);
+    });
+  }
+
+  stars.forEach((star) => {
+    star.addEventListener("click", () => {
+      const value = parseInt(star.dataset.value, 10);
+      ratingInput.value = value;
+      highlight(value);
+      document.getElementById("rating-error").hidden = true;
+    });
+    star.addEventListener("mouseenter", () => {
+      const value = parseInt(star.dataset.value, 10);
+      stars.forEach((s) => {
+        const v = parseInt(s.dataset.value, 10);
+        s.classList.toggle("hover", v <= value);
+      });
+    });
+  });
+
+  starContainer.addEventListener("mouseleave", () => {
+    stars.forEach((s) => s.classList.remove("hover"));
+  });
+}
+
+// ---- 字数统计 ----
+function bindCharCounter() {
+  const textarea = document.getElementById("review-content");
+  const counter = document.getElementById("char-counter");
+  textarea.addEventListener("input", () => {
+    const len = textarea.value.length;
+    counter.textContent = `${len}/5000`;
+    counter.className = "char-counter";
+    if (len > 4500) counter.classList.add("near-limit");
+    if (len >= 5000) counter.classList.add("at-limit");
+  });
+}
+
+// ---- 提交评价 ----
+function bindReviewForm() {
+  const form = document.getElementById("review-form");
+  const ratingInput = document.getElementById("rating-value");
+  const contentInput = document.getElementById("review-content");
+  const ratingError = document.getElementById("rating-error");
+  const contentError = document.getElementById("content-error");
+  const submitError = document.getElementById("submit-error");
+  const submitBtn = document.getElementById("submit-review-btn");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    ratingError.hidden = true;
+    contentError.hidden = true;
+    submitError.hidden = true;
+
+    const rating = parseInt(ratingInput.value, 10);
+    const content = contentInput.value.trim();
+
+    // 校验
+    let valid = true;
+    if (rating < 1 || rating > 5) {
+      ratingError.hidden = false;
+      valid = false;
+    }
+    if (!content) {
+      contentError.hidden = false;
+      valid = false;
+    }
+    if (content.length > 5000) {
+      contentError.textContent = "评价内容不能超过 5000 字";
+      contentError.hidden = false;
+      valid = false;
+    }
+    if (!valid) return;
+
+    const formData = new FormData(form);
+    const semester = formData.get("semester").trim() || null;
+    const isAnonymous = formData.get("is_anonymous") === "on";
+
+    setButtonLoading(submitBtn, true);
+
+    const result = await addReview({
+      courseId,
+      rating,
+      content,
+      semester,
+      isAnonymous,
+    });
+
+    if (!result.ok && result.error === "UNAUTHORIZED") {
+      removeToken();
+      requireAuth();
+      return;
+    }
+
+    setButtonLoading(submitBtn, false);
+
+    if (result.ok) {
+      showToast("评价提交成功", "success");
+      // 重置表单
+      ratingInput.value = "0";
+      contentInput.value = "";
+      document.getElementById("char-counter").textContent = "0/5000";
+      document.querySelectorAll("#star-input .star").forEach((s) => s.classList.remove("active"));
+      // 刷新评价列表
+      reviewPage = 1;
+      loadReviews();
+      // 刷新课程头部（评分可能变化）
+      loadCourseInfo();
+    } else {
+      submitError.textContent = result.error || "提交失败，请重试";
+      submitError.hidden = false;
+      if (result.status === 429) {
+        showToast("操作过于频繁，请稍后再试", "error");
+      }
+    }
+  });
+}
+
+// ---- 启动 ----
+if (courseIdStr) {
+  loadCourseInfo();
+  loadReviews();
+  renderAddReviewForm();
+}
+</script>
+
+</body>
+</html>
