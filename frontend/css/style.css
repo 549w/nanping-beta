@@ -4,15 +4,69 @@
 
 /* ---- CSS 变量覆盖 ---- */
 :root {
-  --nanping-primary: #6c47c4;
-  --nanping-primary-hover: #5a36b0;
-  --nanping-gold: #f4c542;
-  --nanping-gold-light: #f9e69c;
-  --nanping-danger: #d93526;
-  --nanping-success: #2d8a4e;
-  --nanping-info: #3a7dc9;
-  --nanping-nav-bg: #1a1a2e;
+  --nanping-primary: #6B1C6C;
+  --nanping-primary-hover: #4E1450;
+  --nanping-gold: #6B1C6C;
+  --nanping-gold-light: #C9A0CB;
+  --nanping-danger: #8B2252;
+  --nanping-success: #5E1675;
+  --nanping-info: #6B1C6C;
+  --nanping-nav-bg: #1A0A1C;
   --nanping-radius: 8px;
+
+  /* 思源字体 */
+  --nanping-font-sans: "Noto Sans SC", "思源黑体", "Source Han Sans SC", "PingFang SC",
+    "Microsoft YaHei", "Hiragino Sans GB", "WenQuanYi Micro Hei", sans-serif;
+  --nanping-font-serif: "Noto Serif SC", "思源宋体", "Source Han Serif SC", "Noto Serif CJK SC",
+    "STSong", "SimSun", "Songti SC", serif;
+}
+
+/* ---- 全局字体 ---- */
+
+/* 覆盖 Pico.css 的字体变量，确保所有引用 var(--pico-font-family) 的元素也使用思源字体 */
+:root {
+  --pico-font-family: var(--nanping-font-sans);
+  --pico-font-family-emoji: "Noto Sans SC", "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
+}
+
+html {
+  font-family: var(--nanping-font-sans);
+}
+
+body {
+  font-family: var(--nanping-font-sans);
+  font-weight: 400;
+  line-height: 1.8;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 表单元素默认不继承 font-family，必须显式指定 */
+input, button, select, textarea, optgroup, datalist {
+  font-family: var(--nanping-font-sans);
+}
+
+p { line-height: 1.8; }
+
+/* 标题适当紧凑 */
+h1, h2, h3, h4, h5, h6 { line-height: 1.4; }
+
+/* 标题使用宋体 */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--nanping-font-serif);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+h1 { font-size: 2rem; font-weight: 900; }
+h2 { font-size: 1.6rem; }
+h3 { font-size: 1.3rem; }
+h4 { font-size: 1.1rem; }
+
+/* 代码保持等宽 */
+code, pre, kbd, samp, .card-code, .header-code {
+  font-family: "SF Mono", "Cascadia Code", "Fira Code", "JetBrains Mono",
+    "Noto Sans SC", monospace;
 }
 
 /* ---- Material Symbols 图标基础样式 ---- */
@@ -40,7 +94,8 @@
   font-size: 1.2rem;
   text-decoration: none;
   font-weight: 700;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
+  font-family: var(--nanping-font-serif);
 }
 
 .nanping-nav .nav-links {
@@ -69,7 +124,7 @@
 }
 
 .nanping-nav .nav-links .nav-logout:hover {
-  color: #ff6b6b;
+  color: #C08FC9;
 }
 
 /* ---- Hero 区域 ---- */
@@ -113,17 +168,51 @@
   flex-shrink: 0;
 }
 
+.extension-hint {
+  text-align: center;
+  font-size: 1.05rem;
+  color: #222;
+  font-weight: 600;
+  margin-bottom: 0.6rem;
+}
+
+.extension-hint a {
+  color: var(--nanping-primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.extension-hint a:hover {
+  text-decoration: underline;
+}
+
+.info-links {
+  text-align: center;
+  font-size: 0.85rem;
+  color: #888;
+  margin-bottom: 0.8rem;
+}
+
+.info-links a {
+  color: var(--nanping-primary);
+  text-decoration: none;
+}
+
+.info-links a:hover {
+  text-decoration: underline;
+}
+
 /* ---- 课程卡片网格 ---- */
 .course-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.8rem;
   margin-top: 1rem;
 }
 
 .course-card {
   display: block;
-  padding: 1.2rem;
+  padding: 0.9rem 1rem;
   border: 1px solid var(--pico-muted-border-color, #ddd);
   border-radius: var(--nanping-radius);
   text-decoration: none;
@@ -140,41 +229,42 @@
 }
 
 .course-card .card-code {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   color: #888;
   font-family: monospace;
 }
 
 .course-card .card-name {
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 600;
-  margin: 0.2rem 0 0.4rem;
+  margin: 0.15rem 0 0.3rem;
   color: #222;
+  font-family: var(--nanping-font-serif);
 }
 
 .course-card .card-meta {
-  font-size: 0.88rem;
+  font-size: 0.82rem;
   color: #666;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.35rem;
 }
 
 .course-card .card-semester {
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   color: var(--nanping-primary);
-  margin-bottom: 0.3rem;
+  margin-bottom: 0.2rem;
 }
 
 .course-card .card-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 0.5rem;
-  font-size: 0.88rem;
+  margin-top: 0.35rem;
+  font-size: 0.82rem;
 }
 
 .course-card .card-footer .review-count {
   color: #888;
-  font-size: 0.82rem;
+  font-size: 0.78rem;
 }
 
 /* ---- 课程详情头部 ---- */
@@ -245,13 +335,20 @@
   color: var(--nanping-gold);
 }
 
+/* ---- 评价列表网格 ---- */
+#review-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 0.7rem;
+}
+
 /* ---- 评价卡片 ---- */
 .review-card {
   border: 1px solid var(--pico-muted-border-color, #ddd);
   border-left: 3px solid var(--nanping-primary);
   border-radius: var(--nanping-radius);
-  padding: 1rem 1.2rem;
-  margin-bottom: 0.8rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0;
   background: var(--pico-card-background-color, #fff);
 }
 
@@ -263,31 +360,35 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.35rem;
 }
 
 .review-card .review-content {
-  line-height: 1.7;
+  font-family: var(--nanping-font-sans);
+  font-weight: 600;
+  line-height: 1.75;
+  font-size: 0.95rem;
+  color: #333;
   white-space: pre-wrap;
   word-break: break-word;
 }
 
 .review-card .review-footer {
-  margin-top: 0.6rem;
-  font-size: 0.82rem;
+  margin-top: 0.45rem;
+  font-size: 0.78rem;
   color: #888;
   display: flex;
   flex-wrap: wrap;
-  gap: 0.8rem;
+  gap: 0.6rem;
 }
 
 .review-card .review-footer .semester-badge {
   display: inline-block;
-  background: #eef;
-  color: #556;
-  padding: 0.1rem 0.5rem;
+  background: #F3EAF5;
+  color: #6B1C6C;
+  padding: 0.1rem 0.45rem;
   border-radius: 4px;
-  font-size: 0.78rem;
+  font-size: 0.75rem;
 }
 
 /* ---- 星星评分展示 ---- */
@@ -302,8 +403,13 @@
   font-size: 1.2rem;
 }
 
+.star-rating .star-filled {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
 .star-rating .star-empty {
   color: #ccc;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
 
 /* ---- 星星评分输入 ---- */
@@ -328,6 +434,11 @@
 .star-input .star.active,
 .star-input .star.hover {
   color: var(--nanping-gold);
+}
+
+.star-input .star.active .material-symbols-outlined,
+.star-input .star.hover .material-symbols-outlined {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
 
 /* ---- Toast 通知 ---- */
@@ -481,7 +592,7 @@ button.is-loading .btn-spinner {
 }
 
 .char-counter.near-limit {
-  color: #e67e22;
+  color: #6B1C6C;
 }
 
 .char-counter.at-limit {
@@ -595,6 +706,10 @@ button.is-loading .btn-spinner {
     grid-template-columns: 1fr;
   }
 
+  #review-list {
+    grid-template-columns: 1fr;
+  }
+
   .course-header .header-meta {
     flex-direction: column;
     gap: 0.3rem;
@@ -614,4 +729,83 @@ button.is-loading .btn-spinner {
   .toast {
     max-width: 100%;
   }
+}
+
+/* ---- 页脚备案 ---- */
+.nanping-footer {
+  text-align: center;
+  padding: 1.5rem 1rem 2rem;
+  font-size: 0.82rem;
+  color: #999;
+}
+
+.nanping-footer a {
+  color: #999;
+  text-decoration: none;
+}
+
+.nanping-footer a:hover {
+  color: #666;
+  text-decoration: underline;
+}
+
+/* ---- 下载页面 ---- */
+.download-hero {
+  text-align: center;
+  padding: 2rem 1rem 1rem;
+}
+
+.download-hero h1 {
+  font-size: 2rem;
+  margin-bottom: 0.3rem;
+}
+
+.download-hero p {
+  color: #666;
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.download-section {
+  text-align: center;
+  padding: 1rem 0;
+}
+
+.download-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.7rem 1.8rem;
+  background: var(--nanping-primary);
+  color: #fff !important;
+  border-radius: var(--nanping-radius);
+  text-decoration: none;
+  font-size: 1.05rem;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.download-btn:hover {
+  background: var(--nanping-primary-hover);
+  text-decoration: none !important;
+}
+
+details {
+  margin-bottom: 1rem;
+  border: 1px solid var(--pico-muted-border-color, #ddd);
+  border-radius: var(--nanping-radius);
+  padding: 0.8rem 1rem;
+}
+
+details summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+details[open] {
+  padding-bottom: 1rem;
+}
+
+details[open] summary {
+  margin-bottom: 0.5rem;
 }

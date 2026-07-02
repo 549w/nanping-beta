@@ -3,9 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>南评 Nanping — 南京大学课程评价</title>
+  <title>南评 Nanping</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.classless.min.css">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0&family=Noto+Sans+SC:wght@300;400;500;700&family=Noto+Serif+SC:wght@400;500;700;900&display=swap" />
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -27,11 +29,16 @@
   <!-- Hero -->
   <section class="hero">
     <h1>南评 Nanping</h1>
-    <p>南京大学课程评价平台 — 查看真实课程评价，为选课提供参考</p>
+    <p>NJU 一站式选课助手。搜索课程，以查看评价或撰写评价。</p>
   </section>
 
   <!-- 搜索表单 -->
   <section class="search-section">
+    <p class="extension-hint">最佳体验：<a href="download.html">点击下载浏览器插件</a>，在选课页面一键查看评论</p>
+    <p class="info-links">
+      <a href="https://github.com/549w/nanping" target="_blank">项目主页</a>
+      &nbsp;·&nbsp; QQ 群：<strong>1048569521</strong>，反馈问题 / 参与测试 / 交流设计和技术等
+    </p>
     <form id="search-form" autocomplete="off">
       <input type="text" name="code" placeholder="课程号，如 00010" aria-label="课程号">
       <input type="text" name="name" placeholder="课程名称" aria-label="课程名称">
@@ -48,6 +55,10 @@
     </div>
   </section>
 </main>
+
+<footer class="nanping-footer">
+  <a href="https://beian.miit.gov.cn/" target="_blank">苏ICP备2026015844号-3</a>
+</footer>
 
 <script type="module">
 import { escapeHtml, renderStars, renderPagination, showToast } from "./js/utils.js";

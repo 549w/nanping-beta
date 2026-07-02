@@ -58,9 +58,9 @@ export function renderStars(rating) {
   let html = '<span class="star-rating" title="' + r + ' 分">';
   for (let i = 1; i <= 5; i++) {
     if (i <= r) {
-      html += '<span class="material-symbols-outlined">star</span>';
+      html += '<span class="material-symbols-outlined star-filled">star</span>';
     } else {
-      html += '<span class="material-symbols-outlined star-empty">star_outline</span>';
+      html += '<span class="material-symbols-outlined star-empty">star</span>';
     }
   }
   html += "</span>";
