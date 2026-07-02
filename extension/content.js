@@ -223,6 +223,7 @@
     badgeRow.className = "np-badge-row";
 
     var hasMatch = matchResult && matchResult.matched && matchResult.matched.length > 0;
+    var exactId = matchResult && matchResult.exact_course_id;
 
     if (hasMatch) {
       var best = matchResult.matched[0];
@@ -239,9 +240,20 @@
         tagsHtml +
         '<span class="np-badge-rating">' + ratingText + '</span>' +
         '<span class="np-badge-count">' + c.review_count + "条评价</span>" +
-        '<button class="np-badge-btn">查看</button>';
+        '<button class="np-badge-btn">查看评价</button>';
+
+      // 写评价按钮
+      if (exactId) {
+        badgeRow.innerHTML +=
+          ' <a class="np-badge-write" href="https://nanping.eznju.com/course.html?id=' + exactId + '" target="_blank">写评价</a>';
+      }
     } else {
-      badgeRow.innerHTML = '<span class="np-badge-none">暂无评价</span>';
+      var noReviewHtml = '<span class="np-badge-none">暂无评价</span>';
+      if (exactId) {
+        noReviewHtml +=
+          ' <a class="np-badge-write" href="https://nanping.eznju.com/course.html?id=' + exactId + '" target="_blank">写评价</a>';
+      }
+      badgeRow.innerHTML = noReviewHtml;
     }
 
     // 点击「查看」→ 打开侧边面板
@@ -307,7 +319,10 @@
     panel.className = "np-panel";
     panel.innerHTML =
       '<div class="np-panel-header">' +
+      '<div>' +
       '<h2 class="np-panel-title">课程评价</h2>' +
+      '<a class="np-header-link" href="https://nanping.eznju.com" target="_blank">到「南评」写评价！→</a>' +
+      "</div>" +
       '<button class="np-close-btn">✕</button>' +
       "</div>" +
       '<div class="np-panel-body">' +
@@ -366,6 +381,11 @@
       "  flex-shrink: 0;" +
       "}" +
       ".np-panel-title { font-size: 18px; font-weight: 600; color: #111827; }" +
+      ".np-header-link {" +
+      "  font-size: 13px; color: #2563eb; text-decoration: none; font-weight: 500;" +
+      "  display: inline-block; margin-top: 2px;" +
+      "}" +
+      ".np-header-link:hover { color: #1d4ed8; text-decoration: underline; }" +
       ".np-close-btn {" +
       "  background: none; border: none; font-size: 20px; color: #9ca3af;" +
       "  cursor: pointer; padding: 4px 10px; line-height: 1; border-radius: 6px;" +
@@ -403,6 +423,12 @@
       ".np-rating { font-size: 17px; font-weight: 700; color: #f59e0b; }" +
       ".np-rating-none { font-size: 14px; color: #9ca3af; }" +
       ".np-review-count { font-size: 13px; color: #6b7280; }" +
+      ".np-write-review-btn {" +
+      "  font-size: 13px; color: #fff; background: #f59e0b;" +
+      "  padding: 5px 14px; border-radius: 6px; text-decoration: none; font-weight: 600;" +
+      "  margin-left: auto; white-space: nowrap; transition: background 0.15s;" +
+      "}" +
+      ".np-write-review-btn:hover { background: #d97706; text-decoration: none; }" +
       ".np-match-tag {" +
       "  display: inline-block; font-size: 12px; font-weight: 600;" +
       "  padding: 4px 10px; border-radius: 6px; white-space: nowrap;" +
@@ -521,6 +547,7 @@
           ? '<span class="np-rating">⭐ ' + c.avg_rating.toFixed(1) + '</span>'
           : '<span class="np-rating-none">暂无评分</span>') +
         '    <span class="np-review-count">' + c.review_count + ' 条评价</span>' +
+        '    <a class="np-write-review-btn" href="https://nanping.eznju.com/course.html?id=' + c.id + '" target="_blank">写评价</a>' +
         "  </div>" +
         '  <div class="np-section-title">最新评价</div>' +
         reviews.map(renderReviewHtml).join("") +
@@ -673,6 +700,16 @@
     "}" +
     ".np-badge-btn:hover {" +
     "  background: #dbeafe !important;" +
+    "}" +
+    ".np-badge-write {" +
+    "  background: #f59e0b !important; color: #fff !important;" +
+    "  border-radius: 4px !important; padding: 2px 10px !important;" +
+    "  font-size: 12px !important; font-weight: 600 !important;" +
+    "  text-decoration: none !important; white-space: nowrap !important;" +
+    "  transition: background 0.15s !important;" +
+    "}" +
+    ".np-badge-write:hover {" +
+    "  background: #d97706 !important; text-decoration: none !important;" +
     "}" +
     ".np-badge-none {" +
     "  color: #9ca3af !important; font-size: 12px !important; white-space: nowrap !important;" +

@@ -33,9 +33,15 @@ def _shorten_semester(raw: str) -> str:
 
     ``"2020-2021学年 第1学期"`` → ``"2020秋"``
     ``"2020-2021学年 第2学期"`` → ``"2021春"``
+    ``"2025-2026学年 暑期"`` → ``"2026暑"``
 
     无法识别时原样返回。
     """
+    # 暑期：取后一个年份 + "暑"
+    m = re.match(r"(\d{4})-(\d{4})学年 暑期", raw)
+    if m:
+        return f"{m.group(2)}暑"
+
     m = re.match(r"(\d{4})-(\d{4})学年 第(\d)学期", raw)
     if not m:
         return raw
@@ -404,6 +410,42 @@ _MATCH_STRATEGIES: list[tuple[str, str, str, str]] = [
 ]
 
 
+async def _find_exact_course(
+    db: AsyncSession, code: str, name: str, teacher_str: str
+) -> Course | None:
+    """精确匹配页面课程对应的 Course 记录。
+
+    选课平台上的课程必然来自官方教务系统，而我们的数据库导入了教务数据，
+    因此每门页面课程都能在 Course 表中唯一找到（code + name + teacher 完全匹配）。
+
+    匹配步骤：
+    1. code 精确匹配
+    2. 在候选中找 name 精确匹配
+    3. 若多条命中，按 teacher 重叠度选最佳
+    """
+    if not code or not name:
+        return None
+
+    result = await db.execute(select(Course).where(Course.code == code))
+    candidates = result.scalars().all()
+    if not candidates:
+        return None
+
+    # 课程名完全匹配
+    name_matches = [c for c in candidates if c.name.strip() == name]
+    if not name_matches:
+        return None
+
+    if len(name_matches) == 1:
+        return name_matches[0]
+
+    # 多条同名课程：按教师重叠度选最佳
+    if teacher_str:
+        return max(name_matches, key=lambda c: _teacher_overlap(teacher_str, c.teacher))
+
+    return name_matches[0]
+
+
 async def _match_one(
     idx: int, query, db: AsyncSession
 ) -> MatchResult:
@@ -418,10 +460,16 @@ async def _match_one(
 
     每级只取有评价（review_count > 0）的结果。
     命中后按教师重叠度 + 名称匹配度 + 评价数排序，取 top 3。
+
+    此外，始终尝试精确匹配课程（用于写评价链接），即使该课程尚无评价。
     """
     code = query.code.strip()
     teacher_str = query.teacher.strip()
     name = query.name.strip()
+
+    # 精确匹配课程 ID（供「写评价」链接使用，不依赖评价）
+    exact_course = await _find_exact_course(db, code, name, teacher_str)
+    exact_course_id = exact_course.id if exact_course else None
 
     for use_code, use_teacher, use_name, match_level in _MATCH_STRATEGIES:
         # 策略需要的字段若为空则跳过：空白不应被视为匹配
@@ -465,10 +513,10 @@ async def _match_one(
                     match_level=match_level,
                 )
             )
-        return MatchResult(query_index=idx, matched=matched)
+        return MatchResult(query_index=idx, matched=matched, exact_course_id=exact_course_id)
 
     # 所有策略均无有评价的结果
-    return MatchResult(query_index=idx, matched=[])
+    return MatchResult(query_index=idx, matched=[], exact_course_id=exact_course_id)
 
 
 @router.post("/courses/match", response_model=BatchMatchResponse)

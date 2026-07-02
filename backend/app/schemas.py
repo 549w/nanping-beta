@@ -213,6 +213,10 @@ class MatchResult(BaseModel):
 
     query_index: int = Field(description="对应请求中 queries 的索引")
     matched: list[MatchCourseItem] = []
+    exact_course_id: int | None = Field(
+        default=None,
+        description="精确匹配到的课程 ID（code + name + teacher 完全匹配），仅用于写评价链接",
+    )
 
 
 class BatchMatchRequest(BaseModel):
