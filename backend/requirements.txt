@@ -21,6 +21,9 @@ email-validator>=2.0.0
 # 环境变量
 python-dotenv>=1.0.0
 
+# 邮件发送
+resend>=2.0.0
+
 # 数据处理（抓取 & 清洗）
 requests>=2.32.0
 

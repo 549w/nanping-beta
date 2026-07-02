@@ -36,11 +36,12 @@ class Settings(BaseSettings):
     AUTH_MOCK_MODE: bool = True
     MOCK_VERIFICATION_CODE: str = "123456"
 
-    # ---- SMTP（仅 AUTH_MOCK_MODE=False 时需要） ----
-    SMTP_HOST: str = ""
-    SMTP_PORT: int = 587
-    SMTP_USER: str = ""
-    SMTP_PASSWORD: str = ""
+    # ---- Resend 邮件服务（仅 AUTH_MOCK_MODE=False 时需要） ----
+    # 注册地址：https://resend.com
+    # API Key 在 https://resend.com/api-keys 创建
+    RESEND_API_KEY: str = ""
+    # 发件人地址，需先在 Resend 中验证域名并添加 DNS 记录
+    SENDER_EMAIL: str = "noreply@eznju.com"
 
 
 settings = Settings()

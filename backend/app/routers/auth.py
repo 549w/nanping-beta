@@ -86,8 +86,8 @@ async def send_code(request: Request, data: SendCodeRequest) -> MessageResponse:
         print(f"[MOCK] 验证码 for {email}: {code}")
     else:
         code = str(random.randint(100000, 999999))
-        # TODO: 通过 SMTP 发送邮件
-        # await send_email(email, f"您的 Nanping 验证码为：{code}")
+        from ..email import send_verification_code
+        await send_verification_code(email, code)
 
     _verification_codes[email] = CodeEntry(
         code=code,
