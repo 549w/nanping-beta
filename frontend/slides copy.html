@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>南评 Nanping</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.classless.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0&family=Noto+Sans+SC:wght@300;400;500;700&family=Noto+Serif+SC:wght@400;500;700;900&display=swap" />
+  <style>
+    :root {
+      --primary: #6B1C6C;
+      --nav-bg: #1A0A1C;
+      --radius: 8px;
+      --sans: "Noto Sans SC", "思源黑体", "Source Han Sans SC", "PingFang SC",
+        "Microsoft YaHei", "Hiragino Sans GB", "WenQuanYi Micro Hei", sans-serif;
+      --serif: "Noto Serif SC", "思源宋体", "Source Han Serif SC", "Noto Serif CJK SC",
+        "STSong", "SimSun", "Songti SC", serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%; overflow: hidden;
+      font-family: var(--sans);
+      background: #faf8fb; color: #222;
+      -webkit-font-smoothing: antialiased;
+      user-select: none; -webkit-user-select: none;
+    }
+
+    h2, h3 { font-family: var(--serif); font-weight: 700; letter-spacing: 0.02em; line-height: 1.4; }
+
+    /* ============================================================
+       布局：固定顶栏 + 中间舞台 + 固定底栏
+       ============================================================ */
+    .app {
+      display: flex; flex-direction: column;
+      height: 100vh; height: 100dvh;
+    }
+
+    .top-bar {
+      flex-shrink: 0;
+      text-align: center;
+      padding: 0.85rem 1.5rem;
+      background: var(--nav-bg);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      z-index: 100;
+    }
+    .top-bar .brand {
+      font-family: var(--serif);
+      font-size: 1.3rem; font-weight: 700;
+      letter-spacing: 0.06em;
+    }
+
+    .bottom-bar {
+      flex-shrink: 0;
+      text-align: center;
+      padding: 0.7rem 1.5rem;
+      background: #fff;
+      border-top: 1px solid #eee;
+      font-size: 0.95rem; color: #999;
+      z-index: 100;
+    }
+    .bottom-bar strong { color: var(--primary); font-weight: 700; }
+
+    /* ---- 舞台 ---- */
+    .stage {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* ---- 幻灯片 ---- */
+    .slide {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 1.5rem 4rem;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+    .slide.active {
+      opacity: 1; transform: translateX(0);
+      pointer-events: auto;
+    }
+
+    /* 入场起点 */
+    .slide.enter-right  { transform: translateX(60px); }
+    .slide.enter-left   { transform: translateX(-60px); }
+    /* 出场终点 */
+    .slide.exit-right   { opacity: 0; transform: translateX(60px); }
+    .slide.exit-left    { opacity: 0; transform: translateX(-60px); }
+
+    /* ---- 标题 ---- */
+    .slide-title {
+      font-family: var(--serif);
+      font-size: 2.2rem; font-weight: 900;
+      color: var(--nav-bg);
+      text-align: center;
+      margin-bottom: 0.25rem;
+      flex-shrink: 0;
+    }
+    .slide-sub {
+      font-size: 1.05rem; color: #777;
+      text-align: center;
+      margin-bottom: 1.2rem;
+      max-width: 480px;
+      flex-shrink: 0;
+    }
+
+    /* ============================================================
+       Slide 1 — 痛点
+       ============================================================ */
+    .pain-list {
+      display: flex; flex-direction: column; gap: 0.6rem;
+      width: 100%; max-width: 560px;
+      margin-top: 1.5rem;
+    }
+    .pain-card {
+      background: #fff;
+      border: 1px solid #e4d6e8;
+      border-left: 4px solid var(--primary);
+      border-radius: var(--radius);
+      padding: 0.8rem 1.2rem;
+      display: flex; align-items: flex-start; gap: 0.7rem;
+    }
+    .pain-card .icon { flex-shrink: 0; margin-top: 0; }
+    .pain-card .icon .material-symbols-outlined {
+      font-size: 1.5rem; color: var(--primary);
+    }
+    .pain-card .body h3 {
+      font-family: var(--serif);
+      font-size: 0.98rem; font-weight: 700;
+      color: #222; margin-bottom: 0.25rem;
+    }
+    .pain-card .body p {
+      font-size: 0.84rem; color: #666; line-height: 1.5; margin-bottom: 0;
+    }
+    .pain-card .body p + p { margin-top: 0.15rem; }
+    .pain-card .body p strong { color: var(--primary); font-weight: 600; }
+
+    .closing-line {
+      margin-top: 1rem;
+      font-family: var(--serif);
+      font-size: 1.15rem; font-weight: 700;
+      color: var(--primary); text-align: center;
+      flex-shrink: 0;
+    }
+
+    /* ============================================================
+       Slide 2~4 — 截图
+       ============================================================ */
+    .shot-card {
+      width: 100%; max-width: 860px;
+      background: #fff;
+      border: 1px solid #e4d6e8;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+    .shot-card img {
+      width: 100%;
+      max-height: 62vh;
+      object-fit: contain;
+      background: #f5f1f7;
+      display: block;
+    }
+    .shot-card .cap {
+      padding: 0.5rem 1rem;
+      font-size: 0.92rem; font-weight: 600;
+      color: #333; text-align: center;
+      display: flex; align-items: center; justify-content: center;
+      gap: 0.35rem;
+      border-top: 1px solid #f0eaf3;
+    }
+    .shot-card .cap .material-symbols-outlined {
+      font-size: 1.2rem; color: var(--primary);
+    }
+
+    /* ============================================================
+       Slide 5 — 数据
+       ============================================================ */
+    .stats-list {
+      display: flex; flex-direction: column; gap: 0.5rem;
+      width: 100%; max-width: 460px;
+      margin-bottom: 0.6rem;
+    }
+    .stat-card {
+      background: #fff;
+      border: 1px solid #e4d6e8;
+      border-radius: var(--radius);
+      padding: 0.9rem 1.8rem;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .stat-card .num {
+      font-family: var(--serif);
+      font-size: 2.8rem; font-weight: 900;
+      color: var(--primary); line-height: 1.15;
+    }
+    .stat-card .unit {
+      font-size: 0.95rem; color: #555; font-weight: 600;
+    }
+    .stat-card .note {
+      font-size: 0.78rem; color: #999; margin-top: 0.05rem;
+    }
+
+    .quality-notes {
+      text-align: center; font-size: 0.88rem; color: #666; line-height: 1.8;
+      flex-shrink: 0;
+    }
+    .quality-notes .check { color: var(--primary); font-weight: 700; }
+
+    /* ---- 左右箭头 ---- */
+    .arrow {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      z-index: 20;
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      border: 1px solid #e0d4e3;
+      background: rgba(255,255,255,0.9);
+      color: var(--primary);
+      cursor: pointer;
+      font-size: 1.3rem;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+    }
+    .arrow:hover {
+      background: #fff;
+      border-color: var(--primary);
+      box-shadow: 0 2px 8px rgba(107,28,108,0.15);
+    }
+    .arrow.prev { left: 0.8rem; }
+    .arrow.next { right: 0.8rem; }
+
+    /* ---- 导航点 + 页码 ---- */
+    .nav-row {
+      position: absolute; bottom: 1rem; left: 50%; transform: translateX(-50%);
+      display: flex; align-items: center; gap: 0.8rem; z-index: 20;
+    }
+    .dots { display: flex; gap: 0.4rem; }
+    .dots .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #ccc;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.2s;
+    }
+    .dots .dot.active {
+      background: var(--primary);
+      transform: scale(1.35);
+    }
+    .page-num {
+      font-size: 0.8rem; color: #aaa;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ---- 响应式 ---- */
+    @media (max-width: 768px) {
+      .slide { padding: 1.2rem 1rem; }
+      .slide-title { font-size: 1.6rem; }
+      .pain-card { flex-direction: column; gap: 0.4rem; text-align: center; align-items: center; }
+      .shot-card img { max-height: 42vh; }
+      .stat-card .num { font-size: 2.4rem; }
+      .arrow { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ===== 顶栏 ===== -->
+  <header class="top-bar">
+    <span class="brand">南评 Nanping</span>
+  </header>
+
+  <!-- ===== 幻灯片舞台 ===== -->
+  <div class="stage" id="stage">
+
+    <!-- 1. 痛点 -->
+    <div class="slide active">
+      <h2 class="slide-title">红黑榜痛点 逐个击破</h2>
+      <div class="pain-list">
+        <div class="pain-card">
+          <div class="icon"><span class="material-symbols-outlined">help_outline</span></div>
+          <div class="body">
+            <h3>课程太多，无从下手</h3>
+            <p>面对海量优质课程，不知哪门适合自己</p>
+            <p>希望<strong>了解细节，做出选择</strong></p>
+          </div>
+        </div>
+        <div class="pain-card">
+          <div class="icon"><span class="material-symbols-outlined">tab</span></div>
+          <div class="body">
+            <h3>来回切换，效率低下</h3>
+            <p>在红黑榜和选课平台间<strong>来回切换翻找</strong></p>
+            <p>要是评价<strong>直接显示在选课平台</strong>就好了</p>
+          </div>
+        </div>
+        <div class="pain-card">
+          <div class="icon"><span class="material-symbols-outlined">edit_note</span></div>
+          <div class="body">
+            <h3>想写评价，门槛太高</h3>
+            <p>想为优质课程贡献评论，但编辑表格和发邮件太麻烦</p>
+            <p>希望像<strong>在评论区发评论</strong>一样方便</p>
+          </div>
+        </div>
+      </div>
+      <p class="closing-line">革命性南大红黑榜 —— 南评，专为你打造</p>
+    </div>
+
+    <!-- 2. 截图：评分星级 -->
+    <div class="slide">
+      <h2 class="slide-title">评论直接嵌入 选课平台</h2>
+      <p class="slide-sub">打开选课平台，评价星级直接出现</p>
+      <div class="shot-card">
+        <img src="../frontend/screenshots/example.png" alt="评分星级显示在课程行">
+        <div class="cap">
+          <span class="material-symbols-outlined">star</span>
+          评分星级直接出现在课程行
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. 截图：侧边面板 -->
+    <div class="slide">
+      <h2 class="slide-title">评论直接嵌入 选课平台</h2>
+      <p class="slide-sub">点击「查看评价」，详细评论展示在侧，一览无余</p>
+      <div class="shot-card">
+        <img src="../frontend/screenshots/example-panel.png" alt="侧边面板查看详细评价">
+        <div class="cap">
+          <span class="material-symbols-outlined">list_alt</span>
+          侧边面板展示详细评价与评分
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. 截图：写评价 -->
+    <div class="slide">
+      <h2 class="slide-title">评论直接嵌入 选课平台</h2>
+      <p class="slide-sub">刷到上过的课了？点击「写评价」，直接跳转评论区</p>
+      <div class="shot-card">
+        <img src="../frontend/screenshots/example-comments.png" alt="一键跳转写评价">
+        <div class="cap">
+          <span class="material-symbols-outlined">rate_review</span>
+          点击「写评价」，直接跳转评论区
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. 数据 -->
+    <div class="slide">
+      <h2 class="slide-title">做红黑榜，数据为王</h2>
+      <div class="stats-list">
+        <div class="stat-card">
+          <div class="num">11814</div>
+          <div class="unit">条评价</div>
+          <div class="note">覆盖 1679 门课程</div>
+        </div>
+        <div class="stat-card">
+          <div class="num">98.8<span style="font-size:1.4rem">%</span></div>
+          <div class="unit">总入库率</div>
+          <div class="note">有效数据入库率 100%</div>
+        </div>
+        <div class="stat-card">
+          <div class="num">7<span style="font-size:1.4rem"> 年</span></div>
+          <div class="unit">历史评价数据</div>
+          <div class="note">数据清洗 → 规则匹配 → 人工纠错</div>
+        </div>
+      </div>
+      <div class="quality-notes">
+        <p>全部对齐官方开课记录 &nbsp;<span class="check">✓</span></p>
+        <p>多轮规则匹配 + 人工匹配 + 人工纠错</p>
+      </div>
+    </div>
+
+    <!-- 箭头 -->
+    <button class="arrow prev" id="prev"><span class="material-symbols-outlined">chevron_left</span></button>
+    <button class="arrow next" id="next"><span class="material-symbols-outlined">chevron_right</span></button>
+
+    <!-- 导航 -->
+    <div class="nav-row">
+      <div class="dots" id="dots"></div>
+      <span class="page-num" id="pagenum"></span>
+    </div>
+  </div>
+
+  <!-- ===== 底栏 ===== -->
+  <footer class="bottom-bar">
+    <strong>nanping.eznju.com</strong> &nbsp;立即体验
+  </footer>
+
+</div>
+
+<script>
+(function() {
+  const slides = document.querySelectorAll('.slide');
+  const dotsEl = document.getElementById('dots');
+  const pageEl = document.getElementById('pagenum');
+  const prevBtn = document.getElementById('prev');
+  const nextBtn = document.getElementById('next');
+  const total = slides.length;
+  let cur = 0;
+  let locked = false;
+
+  // 构建导航点
+  for (let i = 0; i < total; i++) {
+    const d = document.createElement('span');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    d.addEventListener('click', () => goTo(i));
+    dotsEl.appendChild(d);
+  }
+  const dots = dotsEl.querySelectorAll('.dot');
+  pageEl.textContent = `1 / ${total}`;
+
+  function goTo(i) {
+    if (i === cur || i < 0 || i >= total || locked) return;
+    locked = true;
+
+    const forward = i > cur;
+    const oldSlide = slides[cur];
+    const newSlide = slides[i];
+
+    // 旧 slide 退出
+    oldSlide.classList.remove('active');
+    oldSlide.classList.add(forward ? 'exit-left' : 'exit-right');
+    dots[cur].classList.remove('active');
+
+    // 新 slide 进入
+    newSlide.classList.add(forward ? 'enter-right' : 'enter-left');
+    // force reflow so the enter-* transform takes effect before we add .active
+    void newSlide.offsetWidth;
+    newSlide.classList.add('active');
+    // remove enter-* so transform transitions to 0 (defined by .slide.active)
+    newSlide.classList.remove('enter-right', 'enter-left');
+
+    dots[i].classList.add('active');
+    pageEl.textContent = `${i + 1} / ${total}`;
+    cur = i;
+
+    // 动画结束后清理
+    setTimeout(() => {
+      oldSlide.classList.remove('exit-left', 'exit-right');
+      locked = false;
+    }, 420);
+  }
+
+  prevBtn.addEventListener('click', () => goTo(cur - 1));
+  nextBtn.addEventListener('click', () => goTo(cur + 1));
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft')  goTo(cur - 1);
+    if (e.key === 'ArrowRight') goTo(cur + 1);
+  });
+
+  // 触摸滑动
+  let touchX = 0, touchY = 0;
+  document.addEventListener('touchstart', (e) => {
+    touchX = e.touches[0].clientX;
+    touchY = e.touches[0].clientY;
+  }, { passive: true });
+  document.addEventListener('touchend', (e) => {
+    const dx = e.changedTouches[0].clientX - touchX;
+    const dy = e.changedTouches[0].clientY - touchY;
+    // 水平滑动且超过垂直分量
+    if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
+      goTo(dx < 0 ? cur + 1 : cur - 1);
+    }
+  });
+})();
+</script>
+
+</body>
+</html>
