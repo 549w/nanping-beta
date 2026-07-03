@@ -254,7 +254,7 @@
 
     for (const candidate of CONFIG.API_CANDIDATES) {
       try {
-        const resp = await fetchWithTimeout(candidate + "/", {}, 2000);
+        const resp = await fetch(candidate + "/");
         if (resp.ok) {
           apiBase = candidate;
           console.log("[Nanping] API 地址:", apiBase);
