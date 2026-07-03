@@ -93,6 +93,52 @@
     .slide.exit-right   { opacity: 0; transform: translateX(60px); }
     .slide.exit-left    { opacity: 0; transform: translateX(-60px); }
 
+    /* ============================================================
+       开篇 / 结尾页
+       ============================================================ */
+    .cover-title {
+      font-family: var(--serif);
+      font-size: 2.8rem; font-weight: 900;
+      color: var(--nav-bg);
+      text-align: center;
+      line-height: 1.3;
+    }
+    .cover-sub {
+      font-family: var(--serif);
+      font-size: 1.8rem; font-weight: 700;
+      color: var(--primary);
+      text-align: center;
+      margin-top: 0.6rem;
+      letter-spacing: 0.04em;
+    }
+    .ending-title {
+      font-family: var(--serif);
+      font-size: 2.2rem; font-weight: 700;
+      color: var(--nav-bg);
+      text-align: center;
+      line-height: 1.5;
+    }
+    .ending-url {
+      font-family: var(--serif);
+      font-size: 2rem; font-weight: 900;
+      color: var(--primary);
+      text-align: center;
+      margin-top: 0.8rem;
+      letter-spacing: 0.03em;
+    }
+    .ending-note {
+      text-align: center;
+      margin-top: 1rem;
+      font-size: 0.85rem; color: #aaa;
+      line-height: 1.6;
+    }
+    .ending-note .ez-hint {
+      color: var(--primary);
+      font-weight: 700;
+      border-bottom: 1.5px dashed var(--primary);
+      cursor: default;
+    }
+
     /* ---- 标题 ---- */
     .slide-title {
       font-family: var(--serif);
@@ -280,8 +326,14 @@
   <!-- ===== 幻灯片舞台 ===== -->
   <div class="stage" id="stage">
 
-    <!-- 1. 痛点 -->
+    <!-- 0. 开篇 -->
     <div class="slide active">
+      <h1 class="cover-title">NJU 新一代红黑榜</h1>
+      <p class="cover-sub">南评 Nanping</p>
+    </div>
+
+    <!-- 1. 痛点 -->
+    <div class="slide">
       <h2 class="slide-title">红黑榜痛点 逐个击破</h2>
       <div class="pain-list">
         <div class="pain-card">
@@ -317,7 +369,7 @@
       <h2 class="slide-title">评论直接嵌入 选课平台</h2>
       <p class="slide-sub">打开选课平台，评价星级直接出现</p>
       <div class="shot-card">
-        <img src="./screenshots/example.png" alt="评分星级显示在课程行">
+        <img src="screenshots/example.png" alt="评分星级显示在课程行">
         <div class="cap">
           <span class="material-symbols-outlined">star</span>
           评分星级直接出现在课程行
@@ -330,7 +382,7 @@
       <h2 class="slide-title">评论直接嵌入 选课平台</h2>
       <p class="slide-sub">点击「查看评价」，详细评论展示在侧，一览无余</p>
       <div class="shot-card">
-        <img src="./screenshots/example-panel.png" alt="侧边面板查看详细评价">
+        <img src="screenshots/example-panel.png" alt="侧边面板查看详细评价">
         <div class="cap">
           <span class="material-symbols-outlined">list_alt</span>
           侧边面板展示详细评价与评分
@@ -343,7 +395,7 @@
       <h2 class="slide-title">评论直接嵌入 选课平台</h2>
       <p class="slide-sub">刷到上过的课了？点击「写评价」，直接跳转评论区</p>
       <div class="shot-card">
-        <img src="./screenshots/example-comments.png" alt="一键跳转写评价">
+        <img src="screenshots/example-comments.png" alt="一键跳转写评价">
         <div class="cap">
           <span class="material-symbols-outlined">rate_review</span>
           点击「写评价」，直接跳转评论区
@@ -375,6 +427,14 @@
         <p>全部对齐官方开课记录 &nbsp;<span class="check">✓</span></p>
         <p>多轮规则匹配 + 人工匹配 + 人工纠错</p>
       </div>
+    </div>
+
+    <!-- 6. 结尾 -->
+    <div class="slide">
+      <p class="ending-title">访问链接，参与测试</p>
+      <p class="ending-url">nanping.<span class="ez-hint">ez</span>nju.com</p>
+      <p class="ending-note"><span class="ez-hint">ez</span> stands for easy</p>
+      <p class="ending-note" style="margin-top:0.3rem; font-size:0.82rem;">期待你的反馈与建议</p>
     </div>
 
     <!-- 箭头 -->
