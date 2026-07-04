@@ -337,6 +337,45 @@
       .stat-card .num { font-size: 2.4rem; }
       .arrow { display: none; }
     }
+
+    /* ============================================================
+       海报模式 — 手机小红书 3:4 渲染用，在 ?poster 或按 T 切换
+       ============================================================ */
+    html.poster-mode,
+    html.poster-mode body { font-size: 24px; background: linear-gradient(170deg, #faf8fb 0%, #f3ecf5 50%, #ede0f0 100%) !important; }
+    html.poster-mode .top-bar { padding: 1.6rem 2rem; background: linear-gradient(135deg, #1A0A1C 0%, #2D1030 100%); }
+    html.poster-mode .top-bar .brand { font-size: 2.2rem; letter-spacing: 0.1em; }
+    html.poster-mode .bottom-bar { padding: 1.2rem 2rem; font-size: 1.35rem; }
+    html.poster-mode .slide { padding: 1.5rem 2.5rem; }
+    html.poster-mode .cover-title { font-size: 5rem; }
+    html.poster-mode .cover-sub { font-size: 2.8rem; margin-top: 1.2rem; }
+    html.poster-mode .ending-title { font-size: 3.6rem; }
+    html.poster-mode .ending-url { font-size: 3.2rem; background: linear-gradient(135deg, #6B1C6C, #9B3D9E); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    html.poster-mode .ending-note { font-size: 1.3rem; }
+    html.poster-mode .slide-title { font-size: 3.8rem; font-weight: 900; }
+    html.poster-mode .slide-title::after { content: ''; display: block; width: 60px; height: 3px; background: #6B1C6C; border-radius: 2px; margin: 0.5rem auto 0; }
+    html.poster-mode .slide-sub { font-size: 1.6rem; max-width: 800px; }
+    html.poster-mode .slide-note { font-size: 1.1rem; }
+    html.poster-mode .pain-list { gap: 1.2rem; max-width: 900px; }
+    html.poster-mode .pain-card { padding: 1.5rem 2rem; border-left-width: 5px; border-radius: 12px; box-shadow: 0 2px 16px rgba(107,28,108,0.06); }
+    html.poster-mode .pain-card .icon { width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, #f3e5f5, #e8d0eb); display: flex; align-items: center; justify-content: center; }
+    html.poster-mode .pain-card .icon .material-symbols-outlined { font-size: 2.2rem; }
+    html.poster-mode .pain-card .body h3 { font-size: 1.55rem; }
+    html.poster-mode .pain-card .body p { font-size: 1.25rem; }
+    html.poster-mode .closing-line { font-size: 1.8rem; }
+    html.poster-mode .shot-card { max-width: 1000px; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+    html.poster-mode .shot-card .cap { font-size: 1.4rem; padding: 0.9rem 1.5rem; }
+    html.poster-mode .shot-card .cap .material-symbols-outlined { font-size: 1.8rem; }
+    html.poster-mode .stats-list { gap: 1rem; max-width: 700px; }
+    html.poster-mode .stat-card { padding: 1.5rem 2.4rem; border-radius: 14px; box-shadow: 0 2px 12px rgba(107,28,108,0.04); }
+    html.poster-mode .stat-card .num { font-size: 5.5rem; background: linear-gradient(135deg, #6B1C6C 0%, #9B3D9E 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    html.poster-mode .stat-card .unit { font-size: 1.5rem; }
+    html.poster-mode .stat-card .note { font-size: 1.05rem; }
+    html.poster-mode .quality-notes { font-size: 1.3rem; }
+    html.poster-mode .align-diagram { max-width: 640px; }
+    html.poster-mode .align-caption { font-size: 1.35rem; }
+    html.poster-mode .arrow { display: none !important; }
+    html.poster-mode .nav-row { display: none !important; }
   </style>
 </head>
 <body>
@@ -586,6 +625,42 @@
     // 水平滑动且超过垂直分量
     if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
       goTo(dx < 0 ? cur + 1 : cur - 1);
+    }
+  });
+})();
+</script>
+
+<!-- 海报模式切换按钮 -->
+<button id="poster-toggle" title="切换海报模式 (T)" style="
+  position: fixed; bottom: 1rem; right: 1rem; z-index: 9999;
+  width: 44px; height: 44px; border-radius: 50%;
+  border: 2px solid #6B1C6C; background: #fff;
+  color: #6B1C6C; font-size: 1.2rem; cursor: pointer;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.2s, background 0.2s;
+">🎨</button>
+
+<script>
+(function() {
+  const btn = document.getElementById('poster-toggle');
+  const html = document.documentElement;
+
+  // 自动检测 URL 参数 ?poster
+  if (location.search.includes('poster')) {
+    html.classList.add('poster-mode');
+  }
+
+  function toggle() {
+    html.classList.toggle('poster-mode');
+  }
+
+  btn.addEventListener('click', toggle);
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 't' || e.key === 'T') {
+      // 不要拦截输入框
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      toggle();
     }
   });
 })();
