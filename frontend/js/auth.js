@@ -72,7 +72,7 @@ export function getUserId() {
 export function requireAuth(redirectUrl) {
   if (isLoggedIn()) return;
   const target = redirectUrl || window.location.href;
-  window.location.href = `login.html?redirect=${encodeURIComponent(target)}`;
+  window.location.href = `/login?redirect=${encodeURIComponent(target)}`;
 }
 
 /**
@@ -80,7 +80,7 @@ export function requireAuth(redirectUrl) {
  */
 export function logout() {
   removeToken();
-  window.location.href = "index.html";
+  window.location.href = "/";
 }
 
 // ---- 导航栏 ----
@@ -95,8 +95,9 @@ export function updateNav() {
 
   if (isLoggedIn()) {
     container.innerHTML = `
-      <a href="index.html">首页</a>
-      <a href="me.html">我的评价</a>
+      <a href="/">首页</a>
+      <a href="/me">我的评价</a>
+      <a href="/about">关于</a>
       <a class="nav-logout" id="nav-logout-btn">退出</a>
     `;
     // 绑定退出事件
@@ -109,9 +110,10 @@ export function updateNav() {
     }
   } else {
     container.innerHTML = `
-      <a href="index.html">首页</a>
-      <a href="login.html">登录</a>
-      <a href="register.html">注册</a>
+      <a href="/">首页</a>
+      <a href="/about">关于</a>
+      <a href="/login">登录</a>
+      <a href="/register">注册</a>
     `;
   }
 }

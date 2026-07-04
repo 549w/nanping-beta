@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>页面未找到 — 南评 Nanping</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.classless.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0&family=Noto+Sans+SC:wght@300;400;500;700&family=Noto+Serif+SC:wght@400;500;700;900&display=swap" />
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .notfound {
+      text-align: center;
+      padding: 4rem 1rem;
+    }
+    .notfound-icon {
+      font-size: 6rem;
+      color: var(--nanping-primary);
+      margin-bottom: 1rem;
+      opacity: 0.6;
+    }
+    .notfound h1 {
+      font-size: 3rem;
+      margin-bottom: 0.5rem;
+    }
+    .notfound .code {
+      font-size: 6rem;
+      font-weight: 900;
+      color: var(--nanping-primary);
+      line-height: 1;
+      opacity: 0.15;
+      margin-bottom: -1rem;
+    }
+    .notfound p {
+      color: var(--pico-muted-color);
+      max-width: 400px;
+      margin: 1rem auto;
+    }
+    .notfound-actions {
+      margin-top: 2rem;
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV-START -->
+<nav class="nanping-nav">
+  <div class="nav-brand">
+    <a href="/">南评 Nanping</a>
+  </div>
+  <div class="nav-links" id="nav-auth-links">
+    <a href="/">首页</a>
+    <a href="/about">关于</a>
+    <a href="/login">登录</a>
+    <a href="/register">注册</a>
+  </div>
+</nav>
+<!-- NAV-END -->
+
+<main class="container">
+  <div class="notfound">
+    <div class="code">404</div>
+    <div class="notfound-icon">
+      <span class="material-symbols-outlined">explore</span>
+    </div>
+    <h1>有点南评…</h1>
+    <p>你访问的页面不存在，可能已经被删除、移动或从未存在过。要不回首页搜个课看看？</p>
+    <p>如果总是和这个页面不期而遇，请加入 QQ 群反馈：<strong>1048569521</strong>，或者用你喜欢的其他方式联系作者。</p>
+    <div class="notfound-actions">
+      <a href="/" role="button">回到首页</a>
+      <a href="/login" class="secondary">去登录</a>
+    </div>
+  </div>
+</main>
+
+<footer class="nanping-footer">
+  <a href="/about">关于本站</a>
+  <span style="margin: 0 0.5rem; color: var(--pico-muted-color);">·</span>
+  <a href="/terms">用户协议</a>
+  <span style="margin: 0 0.5rem; color: var(--pico-muted-color);">·</span>
+  <a href="https://beian.miit.gov.cn/" target="_blank">苏ICP备2026015844号-3</a>
+</footer>
+
+<script type="module">
+import { updateNav } from "./js/auth.js";
+updateNav();
+</script>
+
+</body>
+</html>

@@ -15,12 +15,13 @@
 <!-- NAV-START -->
 <nav class="nanping-nav">
   <div class="nav-brand">
-    <a href="index.html">南评 Nanping</a>
+    <a href="/">南评 Nanping</a>
   </div>
   <div class="nav-links" id="nav-auth-links">
-    <a href="index.html">首页</a>
-    <a href="login.html">登录</a>
-    <a href="register.html">注册</a>
+    <a href="/">首页</a>
+    <a href="/about">关于</a>
+    <a href="/login">登录</a>
+    <a href="/register">注册</a>
   </div>
 </nav>
 <!-- NAV-END -->
@@ -59,6 +60,10 @@
 </main>
 
 <footer class="nanping-footer">
+  <a href="/about">关于本站</a>
+  <span style="margin: 0 0.5rem; color: var(--pico-muted-color);">·</span>
+  <a href="/terms">用户协议</a>
+  <span style="margin: 0 0.5rem; color: var(--pico-muted-color);">·</span>
   <a href="https://beian.miit.gov.cn/" target="_blank">苏ICP备2026015844号-3</a>
 </footer>
 
@@ -74,7 +79,7 @@ if (!courseIdStr) {
   document.getElementById("course-header-section").innerHTML = `
     <div class="empty-state">
       <div class="empty-icon"><span class="material-symbols-outlined">warning</span></div>
-      <p>请在<a href="index.html">课程搜索页面</a>选择一门课程</p>
+      <p>请在<a href="/">课程搜索页面</a>选择一门课程</p>
     </div>`;
   document.getElementById("review-list-section").hidden = true;
   document.getElementById("add-review-section").hidden = true;
@@ -98,7 +103,7 @@ async function loadCourseInfo() {
         <div class="empty-state">
           <div class="empty-icon"><span class="material-symbols-outlined">sentiment_dissatisfied</span></div>
           <p>课程不存在或已删除</p>
-          <p><a href="index.html">返回搜索</a></p>
+          <p><a href="/">返回搜索</a></p>
         </div>`;
       document.getElementById("review-list-section").hidden = true;
       document.getElementById("add-review-section").hidden = true;
@@ -263,7 +268,7 @@ function renderAddReviewForm() {
   if (!isLoggedIn()) {
     container.innerHTML = `
       <div class="login-prompt">
-        <p><a href="login.html?redirect=${encodeURIComponent(window.location.href)}">登录</a>后即可评价</p>
+        <p><a href="/login?redirect=${encodeURIComponent(window.location.href)}">登录</a>后即可评价</p>
       </div>`;
     return;
   }

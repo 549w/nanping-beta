@@ -15,12 +15,13 @@
 <!-- NAV-START -->
 <nav class="nanping-nav">
   <div class="nav-brand">
-    <a href="index.html">南评 Nanping</a>
+    <a href="/">南评 Nanping</a>
   </div>
   <div class="nav-links" id="nav-auth-links">
-    <a href="index.html">首页</a>
-    <a href="login.html">登录</a>
-    <a href="register.html">注册</a>
+    <a href="/">首页</a>
+    <a href="/about">关于</a>
+    <a href="/login">登录</a>
+    <a href="/register">注册</a>
   </div>
 </nav>
 <!-- NAV-END -->
@@ -36,9 +37,9 @@
   <div class="extension-sticker">
     <span class="material-symbols-outlined">extension</span>
     <div class="sticker-content">
-      <strong>最佳体验：</strong><a href="download.html">安装浏览器插件</a>，在选课页面一键查看评分与评价。效果示例如下
+      <strong>最佳体验：</strong><a href="/download">安装浏览器插件</a>，在选课页面一键查看评分与评价。效果示例如下
     </div>
-    <a class="sticker-btn" href="download.html">立即安装</a>
+    <a class="sticker-btn" href="/download">立即安装</a>
   </div>
 
   <p style="text-align:center; margin: 0.5rem 0 1.5rem;">
@@ -69,6 +70,10 @@
 </main>
 
 <footer class="nanping-footer">
+  <a href="/about">关于本站</a>
+  <span style="margin: 0 0.5rem; color: var(--pico-muted-color);">·</span>
+  <a href="/terms">用户协议</a>
+  <span style="margin: 0 0.5rem; color: var(--pico-muted-color);">·</span>
   <a href="https://beian.miit.gov.cn/" target="_blank">苏ICP备2026015844号-3</a>
 </footer>
 
@@ -197,7 +202,7 @@ function renderResults(data) {
     const clickHandler = () => {
       const courseData = JSON.parse(card.dataset.course);
       sessionStorage.setItem(`course_${courseData.id}`, JSON.stringify(courseData));
-      window.location.href = `course.html?from=search&id=${courseData.id}`;
+      window.location.href = `/course?from=search&id=${courseData.id}`;
     };
     card.addEventListener("click", clickHandler);
     card.addEventListener("keydown", (e) => {

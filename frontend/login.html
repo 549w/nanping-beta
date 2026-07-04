@@ -15,12 +15,13 @@
 <!-- NAV-START -->
 <nav class="nanping-nav">
   <div class="nav-brand">
-    <a href="index.html">南评 Nanping</a>
+    <a href="/">南评 Nanping</a>
   </div>
   <div class="nav-links" id="nav-auth-links">
-    <a href="index.html">首页</a>
-    <a href="login.html">登录</a>
-    <a href="register.html">注册</a>
+    <a href="/">首页</a>
+    <a href="/about">关于</a>
+    <a href="/login">登录</a>
+    <a href="/register">注册</a>
   </div>
 </nav>
 <!-- NAV-END -->
@@ -51,12 +52,16 @@
       <button type="submit">登录</button>
     </form>
     <p style="text-align: center; margin-top: 1rem;">
-      还没有账号？<a href="register.html">立即注册</a>
+      还没有账号？<a href="/register">立即注册</a>
     </p>
   </article>
 </main>
 
 <footer class="nanping-footer">
+  <a href="/about">关于本站</a>
+  <span style="margin: 0 0.5rem; color: var(--pico-muted-color);">·</span>
+  <a href="/terms">用户协议</a>
+  <span style="margin: 0 0.5rem; color: var(--pico-muted-color);">·</span>
   <a href="https://beian.miit.gov.cn/" target="_blank">苏ICP备2026015844号-3</a>
 </footer>
 
@@ -68,7 +73,7 @@ import { login } from "./js/api.js";
 // ---- 已登录则跳转 ----
 if (isLoggedIn()) {
   const redirect = getQueryParam("redirect");
-  window.location.href = redirect || "index.html";
+  window.location.href = redirect || "/";
 }
 
 // ---- 注册成功提示 ----
@@ -116,7 +121,7 @@ form.addEventListener("submit", async (e) => {
     const redirect = getQueryParam("redirect");
     // 短暂延迟让 toast 可见
     setTimeout(() => {
-      window.location.href = redirect || "index.html";
+      window.location.href = redirect || "/";
     }, 600);
   } else {
     submitBtn.disabled = false;

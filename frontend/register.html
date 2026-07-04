@@ -15,12 +15,13 @@
 <!-- NAV-START -->
 <nav class="nanping-nav">
   <div class="nav-brand">
-    <a href="index.html">南评 Nanping</a>
+    <a href="/">南评 Nanping</a>
   </div>
   <div class="nav-links" id="nav-auth-links">
-    <a href="index.html">首页</a>
-    <a href="login.html">登录</a>
-    <a href="register.html">注册</a>
+    <a href="/">首页</a>
+    <a href="/about">关于</a>
+    <a href="/login">登录</a>
+    <a href="/register">注册</a>
   </div>
 </nav>
 <!-- NAV-END -->
@@ -73,12 +74,19 @@
     </form>
 
     <p style="text-align: center; margin-top: 1rem;">
-      已有账号？<a href="login.html">立即登录</a>
+      已有账号？<a href="/login">立即登录</a>
+    </p>
+    <p style="text-align: center; font-size: 0.85rem; color: var(--pico-muted-color); margin-top: 0.5rem;">
+      注册即表示您同意<a href="/terms" target="_blank">《用户协议》</a>
     </p>
   </article>
 </main>
 
 <footer class="nanping-footer">
+  <a href="/about">关于本站</a>
+  <span style="margin: 0 0.5rem; color: var(--pico-muted-color);">·</span>
+  <a href="/terms">用户协议</a>
+  <span style="margin: 0 0.5rem; color: var(--pico-muted-color);">·</span>
   <a href="https://beian.miit.gov.cn/" target="_blank">苏ICP备2026015844号-3</a>
 </footer>
 
@@ -89,7 +97,7 @@ import { sendCode, register } from "./js/api.js";
 
 // ---- 已登录则跳转 ----
 if (isLoggedIn()) {
-  window.location.href = "index.html";
+  window.location.href = "/";
 }
 
 updateNav();
@@ -200,7 +208,7 @@ form.addEventListener("submit", async (e) => {
   if (result.ok) {
     showToast("注册成功，请登录", "success");
     setTimeout(() => {
-      window.location.href = "login.html?registered=1";
+      window.location.href = "/login?registered=1";
     }, 600);
   } else {
     registerSubmitBtn.disabled = false;
