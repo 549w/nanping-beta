@@ -2,6 +2,15 @@
    Nanping 自定义样式 — 基于 Pico.css v2 classless
    ============================================================ */
 
+/* ---- 自托管 Material Symbols 图标字体 ---- */
+@font-face {
+  font-family: "Material Symbols Outlined";
+  src: url("../fonts/material-symbols-outlined.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+}
+
 /* ---- CSS 变量覆盖 ---- */
 :root {
   --nanping-primary: #6B1C6C;
@@ -14,11 +23,11 @@
   --nanping-nav-bg: #1A0A1C;
   --nanping-radius: 8px;
 
-  /* 思源字体 */
-  --nanping-font-sans: "Noto Sans SC", "思源黑体", "Source Han Sans SC", "PingFang SC",
-    "Microsoft YaHei", "Hiragino Sans GB", "WenQuanYi Micro Hei", sans-serif;
-  --nanping-font-serif: "Noto Serif SC", "思源宋体", "Source Han Serif SC", "Noto Serif CJK SC",
-    "STSong", "SimSun", "Songti SC", serif;
+  /* 思源字体优先，系统字体兜底 */
+  --nanping-font-sans: "Noto Sans SC", "PingFang SC", "Microsoft YaHei",
+    "Hiragino Sans GB", "WenQuanYi Micro Hei", sans-serif;
+  --nanping-font-serif: "Noto Serif SC", "PingFang SC", "STSong",
+    "Songti SC", "SimSun", serif;
 }
 
 /* ---- 全局字体 ---- */
