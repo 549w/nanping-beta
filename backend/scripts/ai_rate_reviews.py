@@ -180,10 +180,6 @@ async def rate_review(
     """
     content = content.strip()
 
-    # 内容过短直接返回 3 分，不消耗 API 调用
-    if len(content) < 4:
-        return 3, 0, 0, 0
-
     user_message = USER_PROMPT_TEMPLATE.format(content=content)
 
     for attempt in range(max_retries):
