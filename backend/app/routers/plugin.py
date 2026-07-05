@@ -278,7 +278,7 @@ async def plugin_endpoint(
 
     # ---- 3. Toast 文案 ----
     if matched_count > 0:
-        success_msg = f"加载成功，匹配到 {matched_count} 条评价"
+        success_msg = f"新匹配到 {matched_count} 条评价"
     else:
         success_msg = "加载完成，暂无匹配的评价"
 

@@ -176,7 +176,7 @@ class TestPluginV2:
         )
         assert response.status_code == 200
         data = response.json()
-        assert "匹配到 1 条评价" in data["toast"]["success"]
+        assert "新匹配到 1 条评价" in data["toast"]["success"]
         assert data["toast"]["loading"] == "「南评」正在加载评论..."
         assert data["toast"]["error"] == "加载失败，请检查网络连接"
 

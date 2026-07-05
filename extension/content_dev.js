@@ -195,6 +195,8 @@
   const state = {
     /** 已注入徽章的行（WeakSet 自动处理 DOM 移除后的 GC） */
     processedRows: new WeakSet(),
+    /** 课程结果缓存：{ "code|teacher": PluginCourseResult, ... }，tab 切换复用 */
+    courseCache: {},
     /** Shadow DOM 根节点 */
     shadowRoot: null,
     /** 侧边面板 DOM */
@@ -1286,60 +1288,83 @@
         showDynamicIsland("loading", loadingText);
       }, "显示加载提示", null);
 
-      // 统一请求 /plugin v2（全量字段 + 后端预渲染 HTML）
-      var username = safeExec(extractUsername, "提取用户名", "");
-      var gender = safeExec(extractUserGender, "提取性别", "");
-      var queries = newCourses.map(function (c) {
-        return {
-          code: c.code,
-          name: c.name,
-          teacher: c.teacher,
-          credits: c.credits || "",
-          schedule: c.schedule || "",
-          campus: c.campus || "",
-          grade: c.grade || "",
-          department: c.department || "",
-        };
-      });
-      var response = await fetchPluginData(queries, username, gender);
-
-      // 注入徽章（后端预渲染 HTML，直接 innerHTML）
+      // 分离缓存命中和未命中的课程
+      var cacheKey = function (c) { return c.code + "|" + c.teacher; };
+      var uncachedCourses = [];
+      var uncachedIndices = [];
       newCourses.forEach(function (c, i) {
-        try {
-          var courseData = response && response.courses ? response.courses[i] : null;
-          injectBadge(c.row, courseData);
-        } catch (err) {
-          console.error("[Nanping] 注入徽章失败:", err);
+        if (state.courseCache[cacheKey(c)]) {
+          // 缓存命中，直接注入
+          safeExec(function () {
+            injectBadge(c.row, state.courseCache[cacheKey(c)]);
+          }, "注入缓存徽章-" + i, null);
+        } else {
+          uncachedCourses.push(c);
+          uncachedIndices.push(i);
         }
       });
 
-      // 缓存 news_html 和 toast 配置
-      if (response) {
-        state.newsHtml = response.news_html || "";
-        state.toastConfig = response.toast || null;
-      }
+      // 只对未缓存的课程请求 API
+      if (uncachedCourses.length > 0) {
+        var username = safeExec(extractUsername, "提取用户名", "");
+        var gender = safeExec(extractUserGender, "提取性别", "");
+        var queries = uncachedCourses.map(function (c) {
+          return {
+            code: c.code, name: c.name, teacher: c.teacher,
+            credits: c.credits || "", schedule: c.schedule || "",
+            campus: c.campus || "", grade: c.grade || "", department: c.department || "",
+          };
+        });
+        var response = await fetchPluginData(queries, username, gender);
 
-      // 渲染 widgets（v2 增值服务插槽）
-      if (response && response.widgets && response.widgets.length > 0) {
-        safeExec(function () {
-          renderWidgets(response.widgets, newCourses);
-        }, "渲染 widgets", null);
-      }
+        // 注入未命中课程 + 写入缓存
+        uncachedCourses.forEach(function (c, idx) {
+          var origIdx = uncachedIndices[idx];
+          var courseData = response && response.courses ? response.courses[idx] : null;
+          if (courseData) {
+            state.courseCache[cacheKey(c)] = courseData;
+          }
+          safeExec(function () {
+            injectBadge(newCourses[origIdx].row, courseData);
+          }, "注入新徽章-" + origIdx, null);
+        });
 
-      // toast 文案优先取响应配置（常驻，手动 × 关闭）
-      safeExec(function () {
-        removeDynamicIsland();
-        if (response && state.toastConfig) {
-          showDynamicIsland("success", state.toastConfig.success);
-        } else if (response) {
-          showDynamicIsland("success", "加载成功");
-        } else {
-          var errorMsg = (state.toastConfig && state.toastConfig.error)
-            ? state.toastConfig.error
-            : "加载失败，请检查网络连接";
-          showDynamicIsland("error", errorMsg);
+        // 缓存 news_html 和 toast 配置
+        if (response) {
+          state.newsHtml = response.news_html || "";
+          state.toastConfig = response.toast || null;
         }
-      }, "显示灵动岛", null);
+
+        // 渲染 widgets
+        if (response && response.widgets && response.widgets.length > 0) {
+          safeExec(function () {
+            renderWidgets(response.widgets, newCourses);
+          }, "渲染 widgets", null);
+        }
+
+        // toast
+        safeExec(function () {
+          removeDynamicIsland();
+          if (response && state.toastConfig) {
+            showDynamicIsland("success", state.toastConfig.success);
+          } else if (response) {
+            showDynamicIsland("success", "加载成功");
+          } else {
+            var errorMsg = (state.toastConfig && state.toastConfig.error)
+              ? state.toastConfig.error : "加载失败，请检查网络连接";
+            showDynamicIsland("error", errorMsg);
+          }
+        }, "显示灵动岛", null);
+      } else {
+        // 全部命中缓存，无需请求
+        safeExec(function () {
+          if (state.toastConfig) {
+            showDynamicIsland("success", state.toastConfig.success);
+          } else {
+            showDynamicIsland("success", "加载成功");
+          }
+        }, "显示灵动岛", null);
+      }
     } catch (err) {
       console.error("[Nanping] processPage 出错:", err);
       safeExec(function () {
