@@ -251,15 +251,55 @@ class BatchMatchResponse(BaseModel):
 
 
 # ============================================================
-# 插件统一接口
+# 插件统一接口 v2
 # ============================================================
 
 
-class PluginToastConfig(BaseModel):
-    """插件提示文案配置。
+class PluginQuery(BaseModel):
+    """单条课程查询 —— 全量字段，插件从页面提取所有可见列。"""
 
-    服务端统一管理所有提示文案，插件端只负责渲染。
+    code: str = Field(default="", description="课程号")
+    name: str = Field(default="", description="课程名")
+    teacher: str = Field(default="", description="授课教师，逗号分隔")
+    credits: str = Field(default="", description="学分")
+    schedule: str = Field(default="", description="时间地点")
+    campus: str = Field(default="", description="校区")
+    grade: str = Field(default="", description="年级")
+    department: str = Field(default="", description="开课单位")
+
+
+class PluginRequest(BaseModel):
+    """POST /plugin 请求体。"""
+
+    queries: list[PluginQuery] = Field(max_length=200, description="最多 200 条")
+    username: str | None = Field(default=None, description="选课页面登录用户名")
+    gender: str | None = Field(default=None, description="用户头像文件名，如 men.png")
+
+
+class PluginCourseResult(BaseModel):
+    """单门课的后端渲染结果 —— 插件直接 innerHTML 注入。"""
+
+    badge_html: str = Field(default="", description="课程行内评分徽章 HTML")
+    panel_html: str = Field(default="", description="侧边面板课程卡片 + 评价列表 HTML")
+    exact_course_id: int | None = Field(default=None, description="精确匹配的课程 ID")
+    load_more_endpoint: str | None = Field(default=None, description="加载更多评价的 URL")
+
+
+class PluginWidget(BaseModel):
+    """后端可下发的任意 UI 元素。
+
+    新增功能只需在此扩展 type 枚举 + 插件侧添加对应的渲染分支。
     """
+
+    type: str = Field(description="widget 类型：inline_badge / input_bar / banner")
+    query_index: int | None = Field(default=None, description="inline_badge 关联的课程行索引")
+    position: str | None = Field(default=None, description="插入位置：before_table / after_table")
+    html: str = Field(default="", description="预渲染的 HTML 片段")
+    endpoint: str | None = Field(default=None, description="input_bar 提交地址")
+
+
+class PluginToastConfig(BaseModel):
+    """插件提示文案配置。"""
 
     loading: str = "「南评」正在加载评论..."
     success: str = ""
@@ -267,12 +307,13 @@ class PluginToastConfig(BaseModel):
 
 
 class PluginResponse(BaseModel):
-    """POST /plugin 统一响应。
+    """POST /plugin v2 统一响应。
 
-    一次请求返回插件渲染需要的全部数据：
-    匹配结果 + 最新公告 + 提示文案配置。
+    插件只需机械地 innerHTML 注入，不判断"画什么"。
+    后端改模板 → 用户刷新即生效（热更新）。
     """
 
     toast: PluginToastConfig
-    news: list[NewsItem] = []
-    results: list[MatchResult]
+    news_html: str = Field(default="", description="面板顶部公告卡片 HTML")
+    courses: list[PluginCourseResult] = Field(default_factory=list)
+    widgets: list[PluginWidget] = Field(default_factory=list)

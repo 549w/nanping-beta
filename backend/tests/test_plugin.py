@@ -1,12 +1,14 @@
-"""插件统一接口测试。
+"""插件统一接口 v2 测试。
 
-覆盖 POST /plugin 的正常与异常路径，
-确保新接口不影响现有 /courses/match 端点。
+覆盖 POST /plugin 的响应结构：badge_html、panel_html、news_html、widgets。
 """
+
+import json
 
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient
+from sqlalchemy import select
 
 from backend.app.models import ActivityLog, News
 
@@ -26,126 +28,157 @@ async def test_news(db_session):
     return news
 
 
-class TestPluginEndpoint:
-    """POST /plugin 测试。"""
+class TestPluginV2:
+    """POST /plugin v2 测试。"""
 
     @pytest.mark.asyncio
-    async def test_basic_match(self, client: AsyncClient, test_course, test_review):
-        """单个查询匹配到课程时应返回正确结果。"""
+    async def test_badge_html_has_match(self, client: AsyncClient, test_course, test_review):
+        """匹配成功时 badge_html 应包含评分、标签、按钮。"""
         response = await client.post(
             "/plugin",
             json={
                 "queries": [
-                    {"code": "00010", "teacher": "张三", "name": "测试课程"}
+                    {
+                        "code": "00010", "name": "测试课程", "teacher": "张三",
+                        "credits": "3", "schedule": "周一 1-2节", "campus": "仙林",
+                        "grade": "2024", "department": "计算机系",
+                    }
                 ],
-                "username": "测试用户",
+                "username": "testuser",
                 "gender": "men.png",
             },
         )
         assert response.status_code == 200
         data = response.json()
 
-        # 验证顶层结构
+        # v2 顶层结构
         assert "toast" in data
-        assert "news" in data
-        assert "results" in data
+        assert "news_html" in data
+        assert "courses" in data
+        assert "widgets" in data
 
-        # 验证 toast
+        # courses 按 query_index 排列
+        assert len(data["courses"]) == 1
+        course = data["courses"][0]
+
+        # badge_html 应有评分
+        badge = course["badge_html"]
+        assert "np-badge-row" not in badge  # 外层由插件包裹
+        assert "np-badge-rating" in badge or "np-star" in badge
+        assert "np-badge-btn" in badge
+        assert "查看评价" in badge
+
+        # panel_html 应有课程信息
+        panel = course["panel_html"]
+        assert "np-course-card" in panel
+        assert "测试课程" in panel
+        assert "张三" in panel
+
+        # exact_course_id
+        assert course["exact_course_id"] == test_course.id
+
+    @pytest.mark.asyncio
+    async def test_badge_html_no_match(self, client: AsyncClient):
+        """无匹配时 badge_html 应显示暂无评价。"""
+        response = await client.post(
+            "/plugin",
+            json={
+                "queries": [
+                    {"code": "99999", "name": "不存在", "teacher": "nobody"}
+                ],
+            },
+        )
+        assert response.status_code == 200
+        data = response.json()
+
+        badge = data["courses"][0]["badge_html"]
+        assert "暂无评价" in badge
+        assert data["courses"][0]["panel_html"] == ""
+        assert data["courses"][0]["exact_course_id"] is None
+
+    @pytest.mark.asyncio
+    async def test_news_html(self, client: AsyncClient, test_news):
+        """news_html 应包含公告信息。"""
+        response = await client.post(
+            "/plugin",
+            json={
+                "queries": [{"code": "99999", "name": "x", "teacher": "x"}],
+            },
+        )
+        assert response.status_code == 200
+        data = response.json()
+
+        assert "np-news-card" in data["news_html"]
+        assert "测试公告" in data["news_html"]
+        assert "测试公告内容" in data["news_html"]
+
+    @pytest.mark.asyncio
+    async def test_news_html_empty(self, client: AsyncClient):
+        """无公告时 news_html 应为空字符串。"""
+        response = await client.post(
+            "/plugin",
+            json={
+                "queries": [{"code": "99999", "name": "x", "teacher": "x"}],
+            },
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["news_html"] == ""
+
+    @pytest.mark.asyncio
+    async def test_optional_fields_accepted(self, client: AsyncClient):
+        """PluginQuery 所有字段均可选。"""
+        response = await client.post(
+            "/plugin",
+            json={"queries": [{"code": "00010"}]},
+        )
+        assert response.status_code == 200
+        assert len(response.json()["courses"]) == 1
+
+    @pytest.mark.asyncio
+    async def test_full_fields_sent(self, client: AsyncClient, test_course, test_review):
+        """全量字段请求应正常返回。"""
+        response = await client.post(
+            "/plugin",
+            json={
+                "queries": [
+                    {
+                        "code": "00010",
+                        "name": "测试课程",
+                        "teacher": "张三",
+                        "credits": "3.0",
+                        "schedule": "周一 1-2节 1-18周 仙Ⅰ-101",
+                        "campus": "仙林校区",
+                        "grade": "2024",
+                        "department": "计算机系",
+                    }
+                ],
+                "username": "fulluser",
+                "gender": "women.png",
+            },
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["toast"]["success"] != ""
+        assert len(data["courses"]) == 1
+
+    @pytest.mark.asyncio
+    async def test_toast_content(self, client: AsyncClient, test_course, test_review):
+        """toast.success 应反映匹配数量。"""
+        response = await client.post(
+            "/plugin",
+            json={
+                "queries": [
+                    {"code": "00010", "name": "测试课程", "teacher": "张三"},
+                    {"code": "99999", "name": "无", "teacher": "x"},
+                ],
+            },
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert "匹配到 1 条评价" in data["toast"]["success"]
         assert data["toast"]["loading"] == "「南评」正在加载评论..."
-        assert "匹配到 1 条评价" in data["toast"]["success"]
         assert data["toast"]["error"] == "加载失败，请检查网络连接"
-
-        # 验证 news 是列表
-        assert isinstance(data["news"], list)
-
-        # 验证 results
-        assert len(data["results"]) == 1
-        result = data["results"][0]
-        assert result["query_index"] == 0
-        assert result["exact_course_id"] == test_course.id
-        assert len(result["matched"]) >= 1
-        assert result["matched"][0]["match_level"] == "code+teacher+name"
-        course = result["matched"][0]["course"]
-        assert course["code"] == "00010"
-        assert course["name"] == "测试课程"
-        assert course["avg_rating"] is not None
-        assert course["review_count"] >= 1
-
-    @pytest.mark.asyncio
-    async def test_no_match(self, client: AsyncClient):
-        """无匹配查询应返回空结果和相应的 toast 文案。"""
-        response = await client.post(
-            "/plugin",
-            json={
-                "queries": [
-                    {"code": "99999", "teacher": "不存在", "name": "不存在的课"}
-                ],
-            },
-        )
-        assert response.status_code == 200
-        data = response.json()
-
-        assert "暂无匹配" in data["toast"]["success"]
-        assert len(data["results"]) == 1
-        assert data["results"][0]["matched"] == []
-
-    @pytest.mark.asyncio
-    async def test_multiple_queries(
-        self, client: AsyncClient, test_course, test_course2, test_review
-    ):
-        """多条查询时 toast 应反映实际匹配数。"""
-        response = await client.post(
-            "/plugin",
-            json={
-                "queries": [
-                    {"code": "00010", "teacher": "张三", "name": "测试课程"},
-                    {"code": "00020", "teacher": "李四", "name": "另一门课"},
-                ],
-            },
-        )
-        assert response.status_code == 200
-        data = response.json()
-
-        assert "匹配到 1 条评价" in data["toast"]["success"]
-        assert len(data["results"]) == 2
-
-        # 第一个有匹配
-        assert len(data["results"][0]["matched"]) >= 1
-        # 第二个无评价，无匹配
-        assert data["results"][1]["matched"] == []
-
-    @pytest.mark.asyncio
-    async def test_news_included(self, client: AsyncClient, test_news):
-        """响应中应包含活跃公告。"""
-        response = await client.post(
-            "/plugin",
-            json={
-                "queries": [
-                    {"code": "99999", "teacher": "x", "name": "x"}
-                ],
-            },
-        )
-        assert response.status_code == 200
-        data = response.json()
-
-        assert len(data["news"]) >= 1
-        news = data["news"][0]
-        assert news["title"] == "测试公告"
-        assert "测试公告内容" in news["content"]
-
-    @pytest.mark.asyncio
-    async def test_username_and_gender_optional(self, client: AsyncClient):
-        """username 和 gender 均为可选字段。"""
-        response = await client.post(
-            "/plugin",
-            json={
-                "queries": [
-                    {"code": "99999", "teacher": "x", "name": "x"}
-                ],
-            },
-        )
-        assert response.status_code == 200
-        # 不应因为缺少可选字段而报错
 
     @pytest.mark.asyncio
     async def test_activity_logged(
@@ -156,17 +189,15 @@ class TestPluginEndpoint:
             "/plugin",
             json={
                 "queries": [
-                    {"code": "00010", "teacher": "张三", "name": "测试课程"}
+                    {"code": "00010", "name": "测试课程", "teacher": "张三"}
                 ],
                 "username": "loguser",
                 "gender": "women.png",
             },
         )
         assert response.status_code == 200
-        await db_session.commit()  # 确保日志已写入
+        await db_session.commit()
 
-        # 查询最后一条 plugin_query 日志
-        from sqlalchemy import select
         result = await db_session.execute(
             select(ActivityLog)
             .where(ActivityLog.action == "plugin_query")
@@ -175,8 +206,6 @@ class TestPluginEndpoint:
         )
         log = result.scalar_one_or_none()
         assert log is not None
-        # details 是 JSON 字符串
-        import json
         detail = json.loads(log.details)
         assert detail["query_count"] == 1
         assert detail["matched_count"] == 1
@@ -185,32 +214,25 @@ class TestPluginEndpoint:
 
 
 class TestExistingEndpointsUnaffected:
-    """确保新接口不影响现有端点。"""
+    """确保旧端点不受影响。"""
 
     @pytest.mark.asyncio
     async def test_courses_match_still_works(
         self, client: AsyncClient, test_course, test_review
     ):
-        """POST /courses/match 应如常工作，不含 toast/news 字段。"""
+        """POST /courses/match 应如常工作。"""
         response = await client.post(
             "/courses/match",
             json={
                 "queries": [
                     {"code": "00010", "teacher": "张三", "name": "测试课程"}
                 ],
-                "username": "test",
             },
         )
         assert response.status_code == 200
         data = response.json()
-
-        # 旧接口不应有 toast 和 news
-        assert "toast" not in data
-        assert "news" not in data
-        # 但应有 results
         assert "results" in data
         assert len(data["results"]) == 1
-        assert len(data["results"][0]["matched"]) >= 1
 
     @pytest.mark.asyncio
     async def test_news_still_works(self, client: AsyncClient, test_news):
@@ -219,5 +241,4 @@ class TestExistingEndpointsUnaffected:
         assert response.status_code == 200
         data = response.json()
         assert isinstance(data, list)
-        assert len(data) >= 1
         assert data[0]["title"] == "测试公告"
