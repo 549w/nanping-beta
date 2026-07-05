@@ -160,6 +160,7 @@
     /** API 候选地址列表 —— 按优先级排列，首个连通者被记住 */
     API_CANDIDATES: [
       "https://npapi.eznju.com",
+      "https://api.nanping.site",
       "http://localhost:8000",
     ],
     MATCH_ENDPOINT: "/courses/match",

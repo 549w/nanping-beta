@@ -11,10 +11,11 @@ WORKDIR /build
 # 替换为腾讯云 apt 源（国内加速）
 RUN sed -i "s|deb.debian.org|mirrors.tencent.com|g" /etc/apt/sources.list.d/debian.sources
 
-# 安装编译 bcrypt 所需的工具链
+# 安装编译依赖（bcrypt + psycopg2）
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libffi-dev \
+    libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # 复制依赖清单并安装到独立 venv
@@ -36,8 +37,8 @@ COPY --from=builder /opt/venv /opt/venv
 WORKDIR /app
 COPY backend/ /app/
 
-# 创建数据目录（SQLite 卷挂载点）
-RUN mkdir -p /app/data && chown -R nanping:nanping /app
+# 创建非 root 用户工作目录
+RUN mkdir -p /app && chown -R nanping:nanping /app
 
 # 切换到非 root 用户
 USER nanping

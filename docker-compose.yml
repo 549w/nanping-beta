@@ -1,25 +1,43 @@
 # ============================================================
 # Nanping Docker Compose
-# 仅运行后端容器，前端由主机 Nginx 直接 serve
+# 后端 + PostgreSQL，前端由主机 Nginx 直接 serve
 # ============================================================
 
 services:
+  db:
+    image: postgres:16-alpine
+    container_name: nanping-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: nanping
+      POSTGRES_PASSWORD: nanping
+      POSTGRES_DB: nanping
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nanping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   backend:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: nanping-backend
     restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
 
-    # 仅绑定到本地回环 — 只有主机 Nginx 能访问，不暴露到公网
     ports:
       - "127.0.0.1:8000:8000"
 
-    # SQLite 数据持久化
-    volumes:
-      - nanping_data:/app/data
-
-    # 生产环境变量
     env_file:
       - .env.production
 
@@ -30,7 +48,6 @@ services:
       retries: 3
       start_period: 15s
 
-    # 日志轮转，防止磁盘写满
     logging:
       driver: "json-file"
       options:
@@ -38,5 +55,4 @@ services:
         max-file: "5"
 
 volumes:
-  nanping_data:
-    # 命名卷，docker compose down 不会删除
+  pgdata:

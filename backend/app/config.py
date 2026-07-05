@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     )
 
     # ---- 数据库 ----
-    DATABASE_URL: str = "sqlite+aiosqlite:///data/nanping.db"
+    DATABASE_URL: str = "postgresql+asyncpg://nanping:nanping@localhost:5432/nanping"
 
     # ---- JWT ----
     SECRET_KEY: str = "change-me-in-production"
