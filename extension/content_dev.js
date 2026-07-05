@@ -286,20 +286,38 @@
   }
 
   /**
+   * 从页面提取当前登录用户性别。
+   * 通过 user-img 的 src 判断：men.png → "male"，women.png → "female"。
+   * @returns {string} "male" / "female" / ""（未知）
+   */
+  function extractUserGender() {
+    var img = document.querySelector(".user-img");
+    if (!img) return "";
+    var src = img.getAttribute("src") || "";
+    if (/men\.png/i.test(src)) return "male";
+    if (/women\.png/i.test(src)) return "female";
+    return "";
+  }
+
+  /**
    * 批量匹配课程。
    * 将页面上所有课程行一次性发送到后端，后端做三级回退搜索。
    *
    * @param {Array<{code: string, teacher: string, name: string}>} queries
    * @param {string} username - 页面登录用户名
+   * @param {string} gender - 用户性别（"male" / "female" / ""）
    * @returns {Promise<{results: Array}|null>}
    */
-  async function batchMatch(queries, username) {
+  async function batchMatch(queries, username, gender) {
     const base = await getApiBase();
     if (!base) return null;
 
     var body = { queries: queries };
     if (username) {
       body.username = username;
+    }
+    if (gender) {
+      body.gender = gender;
     }
 
     try {
@@ -398,74 +416,17 @@
   }
 
   /**
-   * 显示公告横幅（独立于课程匹配流程）。
-   * 嵌入页面流中，放在顶部菜单下方，不遮挡任何元素。
+   * 获取最新公告（供侧边面板使用）。
+   * @returns {Promise<{title: string, content: string}|null>}
    */
-  async function showNewsBanner() {
+  async function getLatestNews() {
     try {
-      // 检查是否已显示过（避免重复）
-      if (document.getElementById("np-news-banner")) return;
-
       var newsList = await fetchNews();
-      if (!newsList || newsList.length === 0) return;
-
-      // 只显示第一条最新公告
-      var news = newsList[0];
-      if (!news.title) return;
-
-      // 创建横幅元素
-      var banner = document.createElement("div");
-      banner.id = "np-news-banner";
-      banner.className = "np-news-banner";
-
-      // 内容预览（截取前 50 字符）
-      var preview = news.content || "";
-      if (preview.length > 50) {
-        preview = preview.substring(0, 50) + "...";
-      }
-
-      banner.innerHTML =
-        '<span class="np-news-banner-icon">📢</span>' +
-        '<div class="np-news-banner-content">' +
-        '  <div class="np-news-banner-title">' + esc(news.title) + '</div>' +
-        (preview ? '  <div class="np-news-banner-preview">' + esc(preview) + '</div>' : '') +
-        '</div>' +
-        '<a class="np-news-banner-link" href="https://nanping.eznju.com" target="_blank">查看详情</a>' +
-        '<button class="np-news-banner-close" title="关闭">×</button>';
-
-      // 绑定关闭按钮
-      var closeBtn = banner.querySelector(".np-news-banner-close");
-      if (closeBtn) {
-        closeBtn.addEventListener("click", function () {
-          banner.style.transition = "opacity 0.3s, max-height 0.3s";
-          banner.style.opacity = "0";
-          banner.style.maxHeight = "0";
-          banner.style.overflow = "hidden";
-          banner.style.padding = "0";
-          banner.style.margin = "0";
-          setTimeout(function () {
-            banner.remove();
-          }, 300);
-        });
-      }
-
-      // 插入到 .top 区域之前（作为兄弟节点），避免被其内部布局影响
-      var topArea = document.querySelector("article#course-main .top");
-      if (topArea && topArea.parentNode) {
-        topArea.parentNode.insertBefore(banner, topArea);
-      } else {
-        // 退而求其次：插入到 body 首个可见容器之前
-        var firstElement = document.body.querySelector("article, main, .container, .content");
-        if (firstElement) {
-          firstElement.parentNode.insertBefore(banner, firstElement);
-        } else {
-          document.body.insertBefore(banner, document.body.firstChild);
-        }
-      }
-
-      console.log("[Nanping] 公告横幅已显示:", news.title);
+      if (!newsList || newsList.length === 0) return null;
+      return newsList[0];
     } catch (err) {
-      console.error("[Nanping] showNewsBanner 出错:", err);
+      console.error("[Nanping] getLatestNews 出错:", err);
+      return null;
     }
   }
 
@@ -785,7 +746,33 @@
       "  transition: background 0.15s;" +
       "}" +
       ".np-load-more:hover { background: #e5e7eb; color: #374151; }" +
-      ".np-load-more:active { background: #d1d5db; }"
+      ".np-load-more:active { background: #d1d5db; }" +
+      /* ===== 公告卡片（侧边栏顶部）===== */
+      ".np-news-card {" +
+      "  background: linear-gradient(135deg, #6B1C6C 0%, #8B2D8B 100%);" +
+      "  border-radius: 10px; padding: 14px 16px; margin-bottom: 16px;" +
+      "  color: #ffffff;" +
+      "}" +
+      ".np-news-card-header {" +
+      "  display: flex; align-items: center; gap: 6px; margin-bottom: 8px;" +
+      "}" +
+      ".np-news-card-icon { font-size: 16px; line-height: 1; }" +
+      ".np-news-card-label {" +
+      "  font-size: 11px; font-weight: 600; opacity: 0.85;" +
+      "  text-transform: uppercase; letter-spacing: 0.5px;" +
+      "}" +
+      ".np-news-card-title {" +
+      "  font-size: 14px; font-weight: 600; line-height: 1.5; margin-bottom: 6px;" +
+      "}" +
+      ".np-news-card-preview {" +
+      "  font-size: 12px; line-height: 1.6; opacity: 0.9; margin-bottom: 10px;" +
+      "}" +
+      ".np-news-card-link {" +
+      "  display: inline-block; font-size: 12px; color: #fff;" +
+      "  text-decoration: underline; font-weight: 500; opacity: 0.9;" +
+      "  transition: opacity 0.15s;" +
+      "}" +
+      ".np-news-card-link:hover { opacity: 1; }"
     );
   }
 
@@ -804,8 +791,11 @@
       state.isPanelOpen = true;
       document.body.style.overflow = "hidden";
 
+      // 拉取最新公告
+      var news = await getLatestNews();
+
       // 渲染内容
-      renderPanelContent(matchResult);
+      renderPanelContent(matchResult, news);
     } catch (err) {
       console.error("[Nanping] openSidePanel 出错:", err);
       // 尝试关闭面板并显示错误
@@ -836,7 +826,7 @@
    * 渲染侧边面板的主体内容。
    * 展示所有匹配到的课程，每个课程一张卡片 + 其最新评价。
    */
-  function renderPanelContent(matchResult) {
+  function renderPanelContent(matchResult, news) {
     try {
       var body = state.panel ? state.panel.querySelector(".np-panel-body") : null;
       if (!body) return;
@@ -848,6 +838,25 @@
       }
 
       var html = "";
+
+      // ---- 公告卡片（侧边栏最前面） ----
+      if (news && news.title) {
+        var newsPreview = news.content || "";
+        if (newsPreview.length > 80) {
+          newsPreview = newsPreview.substring(0, 80) + "...";
+        }
+        html +=
+          '<div class="np-news-card">' +
+          '  <div class="np-news-card-header">' +
+          '    <span class="np-news-card-icon">📢</span>' +
+          '    <span class="np-news-card-label">最新公告</span>' +
+          '  </div>' +
+          '  <div class="np-news-card-title">' + esc(news.title) + '</div>' +
+          (newsPreview ? '  <div class="np-news-card-preview">' + esc(newsPreview) + '</div>' : '') +
+          '  <a class="np-news-card-link" href="https://nanping.eznju.com" target="_blank">查看详情 →</a>' +
+          '</div>';
+      }
+
       matchResult.matched.forEach(function (item) {
         try {
           var c = item.course;
@@ -1081,56 +1090,6 @@
     ".np-badge-tag.np-tag-name {" +
     "  background: #dcfce7 !important; color: #15803d !important;" +
     "}" +
-    /* ===== 公告横幅（与前端首页风格统一）===== */
-    ".np-news-banner {" +
-    "  background: #6B1C6C !important;" +
-    "  color: #ffffff !important;" +
-    "  padding: 12px 20px !important; margin: 8px 0 !important;" +
-    "  border-radius: 8px !important;" +
-    "  box-shadow: 0 2px 8px rgba(107, 28, 108, 0.2) !important;" +
-    "  font-family: 'Noto Sans SC', '思源黑体', 'Source Han Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif !important;" +
-    "  font-size: 14px !important; line-height: 1.5 !important;" +
-    "  display: flex !important; align-items: center !important; gap: 12px !important;" +
-    "  animation: np-news-slide-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;" +
-    "}" +
-    ".np-news-banner-icon {" +
-    "  font-size: 20px !important; flex-shrink: 0 !important;" +
-    "}" +
-    ".np-news-banner-content {" +
-    "  flex: 1 !important; min-width: 0 !important;" +
-    "}" +
-    ".np-news-banner-title {" +
-    "  font-weight: 600 !important; margin-bottom: 2px !important;" +
-    "  white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important;" +
-    "  font-family: 'Noto Serif SC', '思源宋体', serif !important;" +
-    "}" +
-    ".np-news-banner-preview {" +
-    "  font-size: 13px !important; opacity: 0.9 !important;" +
-    "  white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important;" +
-    "}" +
-    ".np-news-banner-link {" +
-    "  color: #ffffff !important; text-decoration: underline !important;" +
-    "  font-weight: 500 !important; white-space: nowrap !important; flex-shrink: 0 !important;" +
-    "  padding: 6px 12px !important; border-radius: 8px !important;" +
-    "  background: rgba(255, 255, 255, 0.15) !important;" +
-    "  transition: background 0.15s !important;" +
-    "}" +
-    ".np-news-banner-link:hover {" +
-    "  background: rgba(255, 255, 255, 0.25) !important; text-decoration: none !important;" +
-    "}" +
-    ".np-news-banner-close {" +
-    "  background: none !important; border: none !important; color: #ffffff !important;" +
-    "  font-size: 20px !important; cursor: pointer !important; padding: 0 !important;" +
-    "  line-height: 1 !important; opacity: 0.8 !important; flex-shrink: 0 !important;" +
-    "  transition: opacity 0.15s !important;" +
-    "}" +
-    ".np-news-banner-close:hover {" +
-    "  opacity: 1 !important;" +
-    "}" +
-    "@keyframes np-news-slide-in {" +
-    "  from { transform: translateY(-100%); opacity: 0; }" +
-    "  to { transform: translateY(0); opacity: 1; }" +
-    "}" +
     /* ===== 加载提示条 ===== */
     ".np-loading-bar {" +
     "  display: flex !important; align-items: center !important; gap: 10px !important;" +
@@ -1156,9 +1115,9 @@
     "  left: 50% !important; transform: translateX(-50%) !important;" +
     "  z-index: 2147483647 !important;" +
     "  background: rgba(31,41,55,0.92) !important; color: #fff !important;" +
-    "  border-radius: 28px !important; padding: 10px 24px !important;" +
-    "  display: flex !important; align-items: center !important; gap: 10px !important;" +
-    "  font-size: 14px !important; font-weight: 500 !important;" +
+    "  border-radius: 32px !important; padding: 12px 28px !important;" +
+    "  display: flex !important; align-items: center !important; gap: 12px !important;" +
+    "  font-size: 15px !important; font-weight: 500 !important;" +
     "  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;" +
     "  pointer-events: none !important; user-select: none !important;" +
     "  box-shadow: 0 8px 32px rgba(0,0,0,0.25) !important;" +
@@ -1167,6 +1126,12 @@
     "}" +
     ".np-island.np-island-out {" +
     "  animation: np-island-out 0.3s ease forwards !important;" +
+    "}" +
+    ".np-island-brand {" +
+    "  font-family: 'Noto Serif SC', '思源宋体', 'Source Han Serif SC', serif !important;" +
+    "  font-weight: 700 !important; font-size: 16px !important;" +
+    "  color: #C9A0CB !important; flex-shrink: 0 !important;" +
+    "  letter-spacing: 2px !important;" +
     "}" +
     ".np-island-spinner {" +
     "  display: inline-block !important; width: 16px !important; height: 16px !important;" +
@@ -1240,13 +1205,15 @@
     island.className = "np-island";
     island.id = "np-island";
 
+    var brandHtml = '<span class="np-island-brand">南评</span>';
+
     if (type === "loading") {
       island.innerHTML =
-        '<span class="np-island-spinner"></span><span>' + text + '</span>';
+        brandHtml + '<span class="np-island-spinner"></span><span>' + text + '</span>';
     } else {
       var icon = type === "success" ? "✅" : "⚠️";
       island.innerHTML =
-        '<span class="np-island-icon">' + icon + '</span><span>' + text + '</span>';
+        brandHtml + '<span class="np-island-icon">' + icon + '</span><span>' + text + '</span>';
     }
 
     document.body.appendChild(island);
@@ -1286,18 +1253,18 @@
       });
       if (newCourses.length === 0) return;
 
-      // 显示加载提示（顶部条 + 灵动岛）
+      // 显示加载提示（灵动岛，fixed 定位不挤压页面）
       safeExec(function () {
-        showLoadingBar("「南评」正在加载评论...", "loading");
         showDynamicIsland("loading", "「南评」正在加载评论...");
       }, "显示加载提示", null);
 
-      // 批量请求 API（带用户名）
+      // 批量请求 API（带用户名和性别）
       var username = safeExec(extractUsername, "提取用户名", "");
+      var gender = safeExec(extractUserGender, "提取性别", "");
       var queries = newCourses.map(function (c) {
         return { code: c.code, teacher: c.teacher, name: c.name };
       });
-      var response = await batchMatch(queries, username);
+      var response = await batchMatch(queries, username, gender);
 
       // 注入徽章
       var matchedCount = 0;
@@ -1323,17 +1290,6 @@
         }
         setTimeout(removeDynamicIsland, 1500);
       }, "显示灵动岛", null);
-
-      // 顶部条显示完成状态，不消失
-      if (response) {
-        safeExec(function () {
-          showLoadingBar("✅ 加载成功，" + newCourses.length + " 门课程中匹配到 " + matchedCount + " 条评价", "success");
-        }, "显示成功加载条", null);
-      } else {
-        safeExec(function () {
-          showLoadingBar("⚠️ 加载失败，请检查网络连接", "error");
-        }, "显示错误加载条", null);
-      }
     } catch (err) {
       console.error("[Nanping] processPage 出错:", err);
       // 尝试显示错误提示
@@ -1370,11 +1326,6 @@
   function init() {
     try {
       injectStyles();
-
-      // 显示公告横幅（独立于课程匹配，尽早显示）
-      setTimeout(function () {
-        safeExecAsync(showNewsBanner, "显示公告横幅", null);
-      }, 300);
 
       // 首次处理：页面可能已有静态内容，也可能还没有（JS 渲染中）
       setTimeout(function () {

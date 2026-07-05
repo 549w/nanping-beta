@@ -16,6 +16,30 @@ from .config import settings
 from .database import async_session
 from .models import ActivityLog, Course, CourseOffering, News, Review, User
 
+# ---- 东八区 ----
+CHINA_TZ = timezone(timedelta(hours=8))
+
+
+def _to_china_time(iso_str: str | None) -> str:
+    """将 ISO 时间字符串转为东八区可读格式，用于管理后台列表显示。"""
+    if not iso_str:
+        return ""
+    try:
+        dt = datetime.fromisoformat(str(iso_str))
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(CHINA_TZ).strftime("%Y-%m-%d %H:%M:%S")
+    except (ValueError, TypeError):
+        return str(iso_str)
+
+
+class BaseView(ModelView):
+    """所有管理视图基类 —— created_at 统一显示为东八区时间。"""
+
+    column_formatters = {
+        "created_at": lambda m, a: _to_china_time(getattr(m, "created_at", None)),
+    }
+
 
 # ============================================================
 # 认证
@@ -61,7 +85,7 @@ class AdminAuth(AuthenticationBackend):
 # ============================================================
 
 
-class UserAdmin(ModelView, model=User):
+class UserAdmin(BaseView, model=User):
     """用户管理。密码字段使用明文输入，保存时自动 bcrypt 哈希。"""
 
     name = "用户"
@@ -105,7 +129,7 @@ class UserAdmin(ModelView, model=User):
         return await super().update_model(request, pk, data)
 
 
-class CourseAdmin(ModelView, model=Course):
+class CourseAdmin(BaseView, model=Course):
     """课程管理。"""
 
     name = "课程"
@@ -124,7 +148,7 @@ class CourseAdmin(ModelView, model=Course):
         return await super().insert_model(request, data)
 
 
-class CourseOfferingAdmin(ModelView, model=CourseOffering):
+class CourseOfferingAdmin(BaseView, model=CourseOffering):
     """开课记录管理。"""
 
     name = "开课记录"
@@ -142,7 +166,7 @@ class CourseOfferingAdmin(ModelView, model=CourseOffering):
         return await super().insert_model(request, data)
 
 
-class ReviewAdmin(ModelView, model=Review):
+class ReviewAdmin(BaseView, model=Review):
     """评价管理。"""
 
     name = "评价"
@@ -161,7 +185,7 @@ class ReviewAdmin(ModelView, model=Review):
         return await super().insert_model(request, data)
 
 
-class ActivityLogAdmin(ModelView, model=ActivityLog):
+class ActivityLogAdmin(BaseView, model=ActivityLog):
     """活动日志（只读）。"""
 
     name = "活动日志"
@@ -175,7 +199,7 @@ class ActivityLogAdmin(ModelView, model=ActivityLog):
     can_delete = True
 
 
-class NewsAdmin(ModelView, model=News):
+class NewsAdmin(BaseView, model=News):
     """公告管理。"""
 
     name = "公告"

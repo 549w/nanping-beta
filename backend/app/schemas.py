@@ -241,6 +241,7 @@ class BatchMatchRequest(BaseModel):
 
     queries: list[MatchQuery] = Field(max_length=200, description="最多 200 条")
     username: str | None = Field(default=None, description="选课页面登录用户名，用于活动日志")
+    gender: str | None = Field(default=None, description="用户性别（male / female），用于活动日志")
 
 
 class BatchMatchResponse(BaseModel):

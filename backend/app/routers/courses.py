@@ -561,13 +561,16 @@ async def match_courses(
     }
     if data.username:
         detail["username"] = data.username
+    if data.gender:
+        detail["gender"] = data.gender
     await log_activity(db, request, "plugin_query", details=detail)
 
     logger.info(
-        "插件批量匹配: queries=%d matched=%d username=%s",
+        "插件批量匹配: queries=%d matched=%d username=%s gender=%s",
         len(data.queries),
         matched_count,
         data.username or "未知",
+        data.gender or "未知",
     )
 
     return BatchMatchResponse(results=results)
