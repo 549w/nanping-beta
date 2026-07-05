@@ -106,7 +106,7 @@ class CourseOffering(Base):
     __tablename__ = "course_offering"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    course_id = Column(Integer, ForeignKey("course.id"), nullable=False, comment="所属课程")
+    course_id = Column(Integer, ForeignKey("course.id", ondelete="CASCADE"), nullable=False, comment="所属课程")
     semester = Column(Text, nullable=False, comment="学年学期")
     major = Column(Text, nullable=False, comment="上课专业")
     created_at = Column(Text, nullable=False, comment="入库时间")
@@ -144,7 +144,7 @@ class ActivityLog(Base):
     __tablename__ = "activity_log"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("user.id"), nullable=True, comment="操作用户，未登录可为空")
+    user_id = Column(Integer, ForeignKey("user.id", ondelete="SET NULL"), nullable=True, comment="操作用户，未登录可为空")
     action = Column(Text, nullable=False, comment="操作类型：login/register/review_create/review_delete/plugin_query 等")
     target_type = Column(Text, nullable=True, comment="操作目标类型：course/review")
     target_id = Column(Integer, nullable=True, comment="操作目标 ID")
@@ -179,8 +179,8 @@ class Review(Base):
     __tablename__ = "review"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    course_id = Column(Integer, ForeignKey("course.id"), nullable=False, comment="所属课程")
-    user_id = Column(Integer, ForeignKey("user.id"), nullable=False, comment="提交用户")
+    course_id = Column(Integer, ForeignKey("course.id", ondelete="CASCADE"), nullable=False, comment="所属课程")
+    user_id = Column(Integer, ForeignKey("user.id", ondelete="SET NULL"), nullable=True, comment="提交用户，用户删除后保留评价")
     rating = Column(Integer, nullable=True, comment="评分 1-5，导入数据可为空")
     content = Column(Text, nullable=False, comment="评价正文")
     semester = Column(Text, nullable=True, comment="学年学期，如 2024秋，导入数据可为空")
