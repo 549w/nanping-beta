@@ -8,6 +8,8 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from .utils import get_client_ip
+
 logger = logging.getLogger("nanping.middleware")
 
 
@@ -19,7 +21,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
         duration_ms = round((time.perf_counter() - start) * 1000)
 
-        client_ip = request.client.host if request.client else "unknown"
+        client_ip = get_client_ip(request)
         logger.info(
             "%s %s %d %.0fms %s",
             request.method,

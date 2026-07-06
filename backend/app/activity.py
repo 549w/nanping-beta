@@ -11,6 +11,7 @@ from fastapi import Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .models import ActivityLog
+from .utils import get_client_ip
 
 logger = logging.getLogger("nanping.activity")
 
@@ -39,7 +40,7 @@ async def log_activity(
     if isinstance(details, dict):
         details = json.dumps(details, ensure_ascii=False)
 
-    client_ip = request.client.host if request.client else "unknown"
+    client_ip = get_client_ip(request)
     user_agent = request.headers.get("User-Agent", "")
 
     entry = ActivityLog(
