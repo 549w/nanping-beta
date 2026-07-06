@@ -238,6 +238,25 @@
     updateNav();
   </script>
 
+  <script>
+    // 下载埋点：点击下载按钮时先上报后端再触发下载
+    (function () {
+      var API_BASE = "https://npapi.eznju.com";
+      var btn = document.querySelector(".download-btn");
+      if (!btn) return;
+
+      btn.addEventListener("click", function (e) {
+        // 异步上报，不阻塞下载
+        fetch(API_BASE + "/events/download", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        }).catch(function () {
+          // 上报失败不影响下载
+        });
+      });
+    })();
+  </script>
+
 </body>
 
 </html>
