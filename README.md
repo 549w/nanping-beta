@@ -16,11 +16,11 @@
 
 <div align="center">
 
-# 🧩 240+ &nbsp;&nbsp;&nbsp; 📚 34,000+ &nbsp;&nbsp;&nbsp; 💬 11,300+
+# 🧩 280+ &nbsp;&nbsp;&nbsp; 📚 34,000+ &nbsp;&nbsp;&nbsp; 💬 11,300+
 
 **插件用户** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; **收录课程** &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; **评价总数**
 
-<sub>数据截至 2026 年 7 月 14 日</sub>
+<sub>数据截至 2026 年 7 月 16 日</sub>
 
 </div>
 
