@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..activity import log_activity
 from ..database import get_db
-from ..plugin_cache import cached_get_latest_news
+from ..plugin_cache import cached_get_latest_news, get_all_stats
 from ..schemas import (
     PluginCourseResult,
     PluginQuery,
@@ -296,6 +296,7 @@ async def plugin_endpoint(
     detail: dict = {
         "query_count": len(data.queries),
         "matched_count": matched_count,
+        "cache_stats": get_all_stats(),
     }
     if data.username:
         detail["username"] = data.username
