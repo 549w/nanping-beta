@@ -160,6 +160,21 @@ class TestSearchCourses:
         names = [item["name"] for item in data["items"]]
         assert any("测试" in n for n in names)
 
+    @pytest.mark.asyncio
+    async def test_code_exact_match_only(self, client, test_course):
+        """课程号搜索应为精确匹配，单字符前缀不应命中。"""
+        # 精确匹配应命中
+        response = await client.get("/courses", params={"code": "00010"})
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total"] >= 1
+
+        # 前缀不应命中（课程号 "0001" 不等于 "00010"）
+        response = await client.get("/courses", params={"code": "0001"})
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total"] == 0
+
 
 class TestGetCourseDetail:
     """GET /courses/{course_id} 测试。"""

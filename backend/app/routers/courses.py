@@ -72,7 +72,7 @@ def _shorten_semester(raw: str) -> str:
 @router.get("/courses", response_model=CourseListResponse)
 async def search_courses(
     request: Request,
-    code: str | None = Query(None, description="课程编号（前缀匹配）"),
+    code: str | None = Query(None, description="课程编号（精确匹配）"),
     name: str | None = Query(None, description="课程名称（模糊匹配）"),
     teacher: str | None = Query(None, description="授课教师（模糊匹配）"),
     page: int = Query(1, ge=1, description="页码"),
@@ -93,7 +93,7 @@ async def search_courses(
     # 构建 WHERE 条件
     conditions = []
     if code:
-        conditions.append(Course.code.like(f"{_escape_like(code)}%"))
+        conditions.append(Course.code == _escape_like(code).strip())
     if name:
         if name in ABBR:
             conditions.append(Course.name.like(f"%{_escape_like(ABBR[name])}%"))
